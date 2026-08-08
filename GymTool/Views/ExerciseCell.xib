@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="22685" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22684"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner"/>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" preservesSuperviewLayoutMargins="YES" selectionStyle="default" indentationWidth="10" reuseIdentifier="ExerciseCell" rowHeight="70" id="cel-lR-oot" customClass="ExerciseCell" customModule="GymTool" customModuleProvider="target">
+            <rect key="frame" x="0.0" y="0.0" width="353" height="70"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" preservesSuperviewLayoutMargins="YES" insetsLayoutMarginsFromSafeArea="NO" tableViewCell="cel-lR-oot" id="con-te-ntV">
+                <rect key="frame" x="0.0" y="0.0" width="353" height="70"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Exercise Name" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nam-La-bel">
+                        <rect key="frame" x="16" y="13" width="321" height="22"/>
+                        <fontDescription key="fontDescription" style="UICTFontTextStyleHeadline"/>
+                        <nil key="textColor"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Description" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="det-La-bel">
+                        <rect key="frame" x="16" y="39" width="321" height="18"/>
+                        <fontDescription key="fontDescription" style="UICTFontTextStyleSubhead"/>
+                        <nil key="textColor"/>
+                        <nil key="highlightedColor"/>
+                    </label>
+                </subviews>
+                <autoresizingMask key="autoresizingMask"/>
+            </tableViewCellContentView>
+            <constraints>
+                <constraint firstItem="nam-La-bel" firstAttribute="top" secondItem="con-te-ntV" secondAttribute="top" constant="12" id="cn1-nl-top"/>
+                <constraint firstItem="nam-La-bel" firstAttribute="leading" secondItem="con-te-ntV" secondAttribute="leading" constant="16" id="cn2-nl-lea"/>
+                <constraint firstItem="con-te-ntV" firstAttribute="trailing" secondItem="nam-La-bel" secondAttribute="trailing" constant="16" id="cn3-nl-tra"/>
+                <constraint firstItem="det-La-bel" firstAttribute="top" secondItem="nam-La-bel" secondAttribute="bottom" constant="4" id="cn4-dl-top"/>
+                <constraint firstItem="det-La-bel" firstAttribute="leading" secondItem="con-te-ntV" secondAttribute="leading" constant="16" id="cn5-dl-lea"/>
+                <constraint firstItem="con-te-ntV" firstAttribute="trailing" secondItem="det-La-bel" secondAttribute="trailing" constant="16" id="cn6-dl-tra"/>
+                <constraint firstItem="con-te-ntV" firstAttribute="bottom" secondItem="det-La-bel" secondAttribute="bottom" constant="12" id="cn7-dl-bot"/>
+            </constraints>
+            <connections>
+                <outlet property="detailsLabel" destination="det-La-bel" id="out-det-lbl"/>
+                <outlet property="nameLabel" destination="nam-La-bel" id="out-nam-lbl"/>
+            </connections>
+            <point key="canvasLocation" x="130" y="140"/>
+        </tableViewCell>
+    </objects>
+</document>
