@@ -4,7 +4,7 @@ import Foundation
 // records whose workout or exercise has since been deleted. These read models
 // carry names already resolved, with fallbacks applied.
 
-struct WorkoutHistoryItem: Identifiable, Equatable {
+struct WorkoutHistoryItem: Identifiable, Hashable {
     var id: String { entryId }
 
     let entryId: String
@@ -15,7 +15,7 @@ struct WorkoutHistoryItem: Identifiable, Equatable {
     let caloriesBurnt: Int?
 }
 
-struct WorkoutHistoryDetail: Identifiable, Equatable {
+struct WorkoutHistoryDetail: Identifiable, Hashable {
     var id: String { entryId }
 
     let entryId: String
@@ -25,7 +25,7 @@ struct WorkoutHistoryDetail: Identifiable, Equatable {
     let exercises: [LoggedExercise]
 }
 
-struct LoggedExercise: Identifiable, Equatable {
+struct LoggedExercise: Identifiable, Hashable {
     var id: String { exerciseId }
 
     let exerciseId: String

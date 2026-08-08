@@ -1,38 +1,29 @@
 import Foundation
+import Observation
 
-protocol ExerciseListViewModelProtocol: AnyObject {
+@MainActor
+protocol ExerciseListViewModelProtocol: AnyObject, Observable {
     var title: String { get }
     var exercises: [Exercise] { get }
     var emptyStateMessage: String { get }
     var isEmpty: Bool { get }
-    var viewDelegate: (any ExerciseListViewModelViewDelegate)? { get set }
 
+    func onAppear()
     func didTapCreateExercise()
     func didSelectExercise(at index: Int)
     func didTapDone()
 }
 
-protocol ExerciseListViewModelViewDelegate: AnyObject {
-    func bind(viewModel: any ExerciseListViewModelProtocol)
-}
-
+@Observable
+@MainActor
 final class ExerciseListViewModel: ExerciseListViewModelProtocol {
-    private let exerciseService: any ExerciseService
-    private let navigator: any Navigator
-
-    weak var viewDelegate: (any ExerciseListViewModelViewDelegate)? {
-        didSet { loadExercises() }
-    }
+    @ObservationIgnored private let exerciseService: any ExerciseService
+    @ObservationIgnored private let navigator: any Navigator
 
     let title = "Exercises"
 
-    var exercises: [Exercise] = [] {
-        didSet { bind() }
-    }
-
-    var emptyStateMessage = "" {
-        didSet { bind() }
-    }
+    var exercises: [Exercise] = []
+    var emptyStateMessage = ""
 
     var isEmpty: Bool {
         exercises.isEmpty
@@ -44,6 +35,12 @@ final class ExerciseListViewModel: ExerciseListViewModelProtocol {
     ) {
         self.exerciseService = exerciseService
         self.navigator = navigator
+
+        exerciseService.addConsumer(self)
+    }
+
+    func onAppear() {
+        loadExercises()
     }
 
     func didTapCreateExercise() {
@@ -56,9 +53,7 @@ final class ExerciseListViewModel: ExerciseListViewModelProtocol {
     }
 
     private func presentForm(mode: ExerciseFormMode) {
-        navigator.navigate(.modal(.exerciseForm(mode: mode, onSave: { [weak self] in
-            self?.loadExercises()
-        })))
+        navigator.navigate(.modal(.exerciseForm(mode: mode)))
     }
 
     func didTapDone() {
@@ -74,10 +69,12 @@ final class ExerciseListViewModel: ExerciseListViewModelProtocol {
             emptyStateMessage = "Couldn't load your exercises.\n\(error.localizedDescription)"
         }
     }
+}
 
-    private func bind() {
-        Task { @MainActor in
-            viewDelegate?.bind(viewModel: self)
-        }
+// MARK: - ExerciseServiceConsumer
+
+extension ExerciseListViewModel: ExerciseServiceConsumer {
+    nonisolated func exercisesDidChange(exerciseService: any ExerciseService) {
+        Task { @MainActor in loadExercises() }
     }
 }

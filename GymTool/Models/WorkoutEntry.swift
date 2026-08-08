@@ -1,6 +1,6 @@
 import Foundation
 
-struct WorkoutEntry: Identifiable, Codable, Equatable {
+struct WorkoutEntry: Identifiable, Codable, Hashable {
     let id: String
     let workoutId: String
     let performedAt: Date
@@ -12,14 +12,14 @@ struct WorkoutEntry: Identifiable, Codable, Equatable {
 /// This is a grouping rather than an entity of its own — it is identified by
 /// the exercise it belongs to, which is what lets it be reconstructed by
 /// grouping rows back out of the flat `entry_sets` table.
-struct ExerciseEntry: Identifiable, Codable, Equatable {
+struct ExerciseEntry: Identifiable, Codable, Hashable {
     var id: String { exerciseId }
 
     let exerciseId: String
     let sets: [WorkoutSet]
 }
 
-struct WorkoutSet: Identifiable, Codable, Equatable {
+struct WorkoutSet: Identifiable, Codable, Hashable {
     let id: String
     let reps: Int
     let weight: Double

@@ -1,6 +1,8 @@
 import Foundation
+import Observation
 
-protocol LogWorkoutExerciseViewModelProtocol: AnyObject {
+@MainActor
+protocol LogWorkoutExerciseViewModelProtocol: AnyObject, Observable {
     var exerciseId: String { get }
     var exerciseName: String { get }
     var exerciseDetails: String { get }
@@ -19,8 +21,10 @@ protocol LogWorkoutExerciseViewModelProtocol: AnyObject {
 
 /// Owns the sets logged against a single exercise while a workout is in
 /// progress. One of these is vended per exercise by `LogWorkoutViewModel`.
+@Observable
+@MainActor
 final class LogWorkoutExerciseViewModel: LogWorkoutExerciseViewModelProtocol {
-    private let exercise: Exercise
+    @ObservationIgnored private let exercise: Exercise
 
     private(set) var sets: [WorkoutSet] = []
 
@@ -78,12 +82,5 @@ final class LogWorkoutExerciseViewModel: LogWorkoutExerciseViewModelProtocol {
 
     private func makeEmptySet() -> WorkoutSet {
         WorkoutSet(id: UUID().uuidString, reps: 0, weight: 0)
-    }
-}
-
-extension Double {
-    /// Drops the decimal point for whole numbers so "60" doesn't read "60.0".
-    var formattedWeight: String {
-        self == rounded() ? String(Int(self)) : String(self)
     }
 }

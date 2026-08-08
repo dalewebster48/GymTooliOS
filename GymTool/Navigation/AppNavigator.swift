@@ -1,89 +1,35 @@
-import UIKit
+import Foundation
+import Observation
 
-final class AppNavigator: NSObject, Navigator {
-    private var navigationController: UINavigationController?
-    private weak var presentedNavigationController: UINavigationController?
-    private var viewControllerFactory: ViewControllerFactory?
+/// Navigation state, not navigation commands. `navigate` and `dismiss` only
+/// mutate these two collections; SwiftUI does the presenting.
+@Observable
+@MainActor
+final class AppNavigator: Navigator {
+    /// The push stack, bound to the root `NavigationStack`. The root screen is
+    /// not in here — this is everything on top of it.
+    var path: [NavigationRoute] = []
 
-    func configure(with factory: ViewControllerFactory) {
-        self.viewControllerFactory = factory
-    }
-
-    func setRootNavigationController(_ navigationController: UINavigationController) {
-        self.navigationController = navigationController
-        self.presentedNavigationController = navigationController
-    }
+    /// Presented sheets, outermost first. This is an array rather than a single
+    /// optional because the app presents a sheet from a sheet (Workouts →
+    /// Exercises → Exercise form). `RootView` presents a fixed two-level chain,
+    /// which is the depth the app actually uses.
+    var modalStack: [NavigationRoute] = []
 
     func navigate(_ action: NavigationAction) {
-        guard let presentedNavigationController else { return }
-
         switch action {
-        case .modal(let route):
-            let viewController = makeViewController(for: route)
-            let navController = UINavigationController(rootViewController: viewController)
-            navController.modalPresentationStyle = .formSheet
-            navController.presentationController?.delegate = self
-            presentedNavigationController.present(navController, animated: true)
-            self.presentedNavigationController = navController
-
         case .push(let route):
-            let viewController = makeViewController(for: route)
-            presentedNavigationController.pushViewController(viewController, animated: true)
+            path.append(route)
 
-        case .bottomSheet(let route):
-            let viewController = makeViewController(for: route)
-            viewController.modalPresentationStyle = .pageSheet
-            if let sheet = viewController.sheetPresentationController {
-                sheet.detents = [.medium(), .large()]
-            }
-            viewController.presentationController?.delegate = self
-            presentedNavigationController.present(viewController, animated: true)
+        case .modal(let route):
+            modalStack.append(route)
         }
     }
 
-    func dismiss(completion: (() -> Void)? = nil) {
-        guard let presentedNavigationController else {
-            completion?()
-            return
+    func dismiss(completion: (() -> Void)?) {
+        if !modalStack.isEmpty {
+            modalStack.removeLast()
         }
-
-        let presenting = presentedNavigationController.presentingViewController as? UINavigationController
-
-        presentedNavigationController.dismiss(animated: true) { [weak self] in
-            self?.presentedNavigationController = presenting ?? self?.navigationController
-            completion?()
-        }
-    }
-
-    private func makeViewController(for route: NavigationRoute) -> UIViewController {
-        guard let viewControllerFactory else {
-            fatalError("ViewControllerFactory not configured on AppNavigator")
-        }
-
-        switch route {
-        case .exerciseList:
-            return viewControllerFactory.makeExerciseListViewController()
-
-        case .exerciseForm(let mode, let onSave):
-            return viewControllerFactory.makeExerciseFormViewController(mode: mode, onSave: onSave)
-
-        case .workoutForm(let mode, let onSave):
-            return viewControllerFactory.makeWorkoutFormViewController(mode: mode, onSave: onSave)
-
-        case .logWorkout(let workoutId):
-            return viewControllerFactory.makeLogWorkoutViewController(workoutId: workoutId)
-
-        case .historyDetail(let entryId):
-            return viewControllerFactory.makeHistoryDetailViewController(entryId: entryId)
-        }
-    }
-}
-
-// MARK: - UIAdaptivePresentationControllerDelegate
-
-extension AppNavigator: UIAdaptivePresentationControllerDelegate {
-    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        let presenting = presentationController.presentingViewController as? UINavigationController
-        presentedNavigationController = presenting ?? navigationController
+        completion?()
     }
 }

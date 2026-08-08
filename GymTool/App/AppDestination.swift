@@ -1,15 +1,14 @@
 import Foundation
 
-enum NavigationRoute {
+enum NavigationRoute: Hashable {
     case exerciseList
-    case exerciseForm(mode: ExerciseFormMode, onSave: () -> Void)
-    case workoutForm(mode: WorkoutFormMode, onSave: () -> Void)
+    case exerciseForm(mode: ExerciseFormMode)
+    case workoutForm(mode: WorkoutFormMode)
     case logWorkout(workoutId: String)
     case historyDetail(entryId: String)
 }
 
-enum NavigationAction {
+enum NavigationAction: Hashable {
     case modal(NavigationRoute)
     case push(NavigationRoute)
-    case bottomSheet(NavigationRoute)
 }

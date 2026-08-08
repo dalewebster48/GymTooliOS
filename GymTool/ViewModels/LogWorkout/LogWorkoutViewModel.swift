@@ -1,23 +1,23 @@
 import Foundation
+import Observation
 
 /// Vends the per-exercise child view models for the logging screen. Declared
 /// here and conformed by `ViewModelFactory` so the parent view model never
 /// constructs a child itself.
+@MainActor
 protocol LogWorkoutExerciseViewModelFactory: AnyObject {
     func makeLogWorkoutExerciseViewModel(exercise: Exercise) -> any LogWorkoutExerciseViewModelProtocol
 }
 
-protocol LogWorkoutViewModelProtocol: AnyObject {
+@MainActor
+protocol LogWorkoutViewModelProtocol: AnyObject, Observable {
     var title: String { get }
     var exerciseViewModels: [any LogWorkoutExerciseViewModelProtocol] { get }
     var canSubmit: Bool { get }
     var errorMessage: String? { get }
-    /// Bumped whenever sets are added or removed. The view controller reloads
-    /// its table only when this changes, so typing in a field never tears down
-    /// the text field being edited.
-    var setsVersion: Int { get }
-    var viewDelegate: (any LogWorkoutViewModelViewDelegate)? { get set }
+    var caloriesText: String { get }
 
+    func onAppear()
     func didTapAddSet(inExerciseAt exerciseIndex: Int)
     func didUpdateCalories(_ text: String)
     func didUpdateReps(_ text: String, setIndex: Int, exerciseIndex: Int)
@@ -27,42 +27,23 @@ protocol LogWorkoutViewModelProtocol: AnyObject {
     func didTapCancel()
 }
 
-protocol LogWorkoutViewModelViewDelegate: AnyObject {
-    func bind(viewModel: any LogWorkoutViewModelProtocol)
-}
-
+@Observable
+@MainActor
 final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
-    private let workoutId: String
-    private let workoutService: any WorkoutService
-    private let workoutEntryService: any WorkoutEntryService
-    private let exerciseViewModelFactory: any LogWorkoutExerciseViewModelFactory
-    private let navigator: any Navigator
+    @ObservationIgnored private let workoutId: String
+    @ObservationIgnored private let workoutService: any WorkoutService
+    @ObservationIgnored private let workoutEntryService: any WorkoutEntryService
+    @ObservationIgnored private let exerciseViewModelFactory: any LogWorkoutExerciseViewModelFactory
+    @ObservationIgnored private let navigator: any Navigator
 
-    weak var viewDelegate: (any LogWorkoutViewModelViewDelegate)? {
-        didSet { loadWorkout() }
-    }
-
-    var title = "Log Workout" {
-        didSet { bind() }
-    }
-
-    var exerciseViewModels: [any LogWorkoutExerciseViewModelProtocol] = [] {
-        didSet {
-            setsVersion += 1
-        }
-    }
-
-    var setsVersion = 0 {
-        didSet { bind() }
-    }
-
-    var errorMessage: String? {
-        didSet { bind() }
-    }
+    var title = "Log Workout"
+    var exerciseViewModels: [any LogWorkoutExerciseViewModelProtocol] = []
+    var errorMessage: String?
+    var caloriesText = ""
 
     /// Optional, and deliberately not part of `canSubmit` — a session is worth
     /// recording whether or not you bothered to enter calories.
-    private var caloriesBurnt: Int?
+    @ObservationIgnored private var caloriesBurnt: Int?
 
     var canSubmit: Bool {
         exerciseViewModels.contains { $0.makeExerciseEntry() != nil }
@@ -82,34 +63,34 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
         self.navigator = navigator
     }
 
+    func onAppear() {
+        guard exerciseViewModels.isEmpty else { return }
+        loadWorkout()
+    }
+
     func didTapAddSet(inExerciseAt exerciseIndex: Int) {
         guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
         exerciseViewModel.addSet()
-        setsVersion += 1
     }
 
     func didUpdateCalories(_ text: String) {
+        caloriesText = text
         caloriesBurnt = Int(text.trimmed)
     }
 
     func didUpdateReps(_ text: String, setIndex: Int, exerciseIndex: Int) {
         guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
         exerciseViewModel.updateReps(text, at: setIndex)
-        // Deliberately no `setsVersion` bump: the set structure is unchanged,
-        // and rebuilding the table here would end editing on every keystroke.
-        bind()
     }
 
     func didUpdateWeight(_ text: String, setIndex: Int, exerciseIndex: Int) {
         guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
         exerciseViewModel.updateWeight(text, at: setIndex)
-        bind()
     }
 
     func didDeleteSet(setIndex: Int, exerciseIndex: Int) {
         guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
         exerciseViewModel.removeSet(at: setIndex)
-        setsVersion += 1
     }
 
     func didTapSubmit() {
@@ -144,12 +125,6 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
             }
         } catch {
             errorMessage = "Couldn't load this workout. \(error.localizedDescription)"
-        }
-    }
-
-    private func bind() {
-        Task { @MainActor in
-            viewDelegate?.bind(viewModel: self)
         }
     }
 }

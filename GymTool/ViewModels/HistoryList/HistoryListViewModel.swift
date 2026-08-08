@@ -1,43 +1,45 @@
 import Foundation
+import Observation
 
-protocol HistoryListViewModelProtocol: AnyObject {
+@MainActor
+protocol HistoryListViewModelProtocol: AnyObject, Observable {
     var title: String { get }
     var items: [WorkoutHistoryItem] { get }
     var emptyStateMessage: String { get }
     var isEmpty: Bool { get }
     var deleteConfirmationTitle: String { get }
     var deleteConfirmationMessage: String { get }
-    var viewDelegate: (any HistoryListViewModelViewDelegate)? { get set }
+    var isConfirmingDelete: Bool { get }
 
+    func onAppear()
     func subtitle(for item: WorkoutHistoryItem) -> String
     func detailText(for item: WorkoutHistoryItem) -> String
     func reload()
     func didSelectItem(at index: Int)
-    func didConfirmDeleteItem(at index: Int)
+    func didRequestDeleteItem(at index: Int)
+    func didConfirmDelete()
+    func didCancelDelete()
 }
 
-protocol HistoryListViewModelViewDelegate: AnyObject {
-    func bind(viewModel: any HistoryListViewModelProtocol)
-}
-
+@Observable
+@MainActor
 final class HistoryListViewModel: HistoryListViewModelProtocol {
-    private let workoutEntryService: any WorkoutEntryService
-    private let navigator: any Navigator
-
-    weak var viewDelegate: (any HistoryListViewModelViewDelegate)? {
-        didSet { reload() }
-    }
+    @ObservationIgnored private let workoutEntryService: any WorkoutEntryService
+    @ObservationIgnored private let navigator: any Navigator
 
     let title = "History"
     let deleteConfirmationTitle = "Delete this session?"
     let deleteConfirmationMessage = "The sets you recorded will be removed. This can't be undone."
 
-    var items: [WorkoutHistoryItem] = [] {
-        didSet { bind() }
-    }
+    var items: [WorkoutHistoryItem] = []
+    var emptyStateMessage = ""
 
-    var emptyStateMessage = "" {
-        didSet { bind() }
+    /// The row a delete has been requested for. The view only asks whether a
+    /// confirmation is showing; which row it applies to stays in here.
+    private var pendingDeleteIndex: Int?
+
+    var isConfirmingDelete: Bool {
+        pendingDeleteIndex != nil
     }
 
     var isEmpty: Bool {
@@ -50,6 +52,14 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
     ) {
         self.workoutEntryService = workoutEntryService
         self.navigator = navigator
+
+        // A session logged from the Workouts tab has to appear here without the
+        // view needing an appearance hook to notice.
+        workoutEntryService.addConsumer(self)
+    }
+
+    func onAppear() {
+        reload()
     }
 
     func subtitle(for item: WorkoutHistoryItem) -> String {
@@ -66,8 +76,6 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
         return "\(exercises) · \(sets) · \(calories) kcal"
     }
 
-    /// Called by the view when the tab becomes visible, so a session logged
-    /// while History was off-screen shows up without relaunching.
     func reload() {
         do {
             items = try workoutEntryService.fetchHistory()
@@ -83,20 +91,31 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
         navigator.navigate(.push(.historyDetail(entryId: item.entryId)))
     }
 
-    func didConfirmDeleteItem(at index: Int) {
-        guard let item = items[safe: index] else { return }
+    func didRequestDeleteItem(at index: Int) {
+        guard items.indices.contains(index) else { return }
+        pendingDeleteIndex = index
+    }
+
+    func didCancelDelete() {
+        pendingDeleteIndex = nil
+    }
+
+    func didConfirmDelete() {
+        defer { pendingDeleteIndex = nil }
+        guard let index = pendingDeleteIndex, let item = items[safe: index] else { return }
 
         do {
             try workoutEntryService.deleteEntry(id: item.entryId)
-            reload()
         } catch {
             emptyStateMessage = "Couldn't delete that session.\n\(error.localizedDescription)"
         }
     }
+}
 
-    private func bind() {
-        Task { @MainActor in
-            viewDelegate?.bind(viewModel: self)
-        }
+// MARK: - WorkoutEntryServiceConsumer
+
+extension HistoryListViewModel: WorkoutEntryServiceConsumer {
+    nonisolated func entriesDidChange(workoutEntryService: any WorkoutEntryService) {
+        Task { @MainActor in reload() }
     }
 }

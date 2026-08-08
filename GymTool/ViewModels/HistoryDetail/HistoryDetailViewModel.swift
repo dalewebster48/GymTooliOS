@@ -1,43 +1,28 @@
 import Foundation
+import Observation
 
-protocol HistoryDetailViewModelProtocol: AnyObject {
+@MainActor
+protocol HistoryDetailViewModelProtocol: AnyObject, Observable {
     var title: String { get }
     var summaryText: String { get }
     var exercises: [LoggedExercise] { get }
     var errorMessage: String? { get }
-    var viewDelegate: (any HistoryDetailViewModelViewDelegate)? { get set }
 
+    func onAppear()
     func setNumberText(at index: Int) -> String
     func setDetailText(for set: WorkoutSet) -> String
 }
 
-protocol HistoryDetailViewModelViewDelegate: AnyObject {
-    func bind(viewModel: any HistoryDetailViewModelProtocol)
-}
-
+@Observable
+@MainActor
 final class HistoryDetailViewModel: HistoryDetailViewModelProtocol {
-    private let entryId: String
-    private let workoutEntryService: any WorkoutEntryService
+    @ObservationIgnored private let entryId: String
+    @ObservationIgnored private let workoutEntryService: any WorkoutEntryService
 
-    weak var viewDelegate: (any HistoryDetailViewModelViewDelegate)? {
-        didSet { loadDetail() }
-    }
-
-    var title = "Session" {
-        didSet { bind() }
-    }
-
-    var summaryText = "" {
-        didSet { bind() }
-    }
-
-    var exercises: [LoggedExercise] = [] {
-        didSet { bind() }
-    }
-
-    var errorMessage: String? {
-        didSet { bind() }
-    }
+    var title = "Session"
+    var summaryText = ""
+    var exercises: [LoggedExercise] = []
+    var errorMessage: String?
 
     init(
         entryId: String,
@@ -45,6 +30,10 @@ final class HistoryDetailViewModel: HistoryDetailViewModelProtocol {
     ) {
         self.entryId = entryId
         self.workoutEntryService = workoutEntryService
+    }
+
+    func onAppear() {
+        loadDetail()
     }
 
     func setNumberText(at index: Int) -> String {
@@ -75,11 +64,5 @@ final class HistoryDetailViewModel: HistoryDetailViewModelProtocol {
             return detail.performedAt.historyFormatted
         }
         return "\(detail.performedAt.historyFormatted) · \(calories) kcal"
-    }
-
-    private func bind() {
-        Task { @MainActor in
-            viewDelegate?.bind(viewModel: self)
-        }
     }
 }

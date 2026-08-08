@@ -1,6 +1,7 @@
 import Foundation
+import Observation
 
-enum HomeTab: Int, CaseIterable {
+enum HomeTab: Int, CaseIterable, Hashable {
     case workouts
     case history
 
@@ -12,33 +13,48 @@ enum HomeTab: Int, CaseIterable {
     }
 }
 
-protocol HomeContainerViewModelProtocol: AnyObject {
+/// The home screen vends the two tab view models it pages between. They are
+/// built by `ViewModelFactory` like every other view model — never inline here.
+@MainActor
+protocol HomeContainerChildViewModelFactory: AnyObject {
+    func makeWorkoutListViewModel() -> any WorkoutListViewModelProtocol
+    func makeHistoryListViewModel() -> any HistoryListViewModelProtocol
+}
+
+@MainActor
+protocol HomeContainerViewModelProtocol: AnyObject, Observable {
     var tabs: [HomeTab] { get }
     var selectedTab: HomeTab { get }
-    var viewDelegate: (any HomeContainerViewModelViewDelegate)? { get set }
+    var workoutListViewModel: any WorkoutListViewModelProtocol { get }
+    var historyListViewModel: any HistoryListViewModelProtocol { get }
+    /// Only the Workouts tab contributes bar buttons; History has none.
+    var showsWorkoutActions: Bool { get }
 
     func didSelectTab(at index: Int)
     /// Called when the user swipes between pages, so the segmented control
     /// follows the page rather than the other way round.
     func didPageTo(index: Int)
+    func didTapCreateWorkout()
+    func didTapManageExercises()
 }
 
-protocol HomeContainerViewModelViewDelegate: AnyObject {
-    func bind(viewModel: any HomeContainerViewModelProtocol)
-}
-
+@Observable
+@MainActor
 final class HomeContainerViewModel: HomeContainerViewModelProtocol {
-    weak var viewDelegate: (any HomeContainerViewModelViewDelegate)? {
-        didSet { bind() }
-    }
-
     let tabs = HomeTab.allCases
 
-    var selectedTab: HomeTab = .workouts {
-        didSet {
-            guard selectedTab != oldValue else { return }
-            bind()
-        }
+    @ObservationIgnored let workoutListViewModel: any WorkoutListViewModelProtocol
+    @ObservationIgnored let historyListViewModel: any HistoryListViewModelProtocol
+
+    var selectedTab: HomeTab = .workouts
+
+    var showsWorkoutActions: Bool {
+        selectedTab == .workouts
+    }
+
+    init(childViewModelFactory: any HomeContainerChildViewModelFactory) {
+        self.workoutListViewModel = childViewModelFactory.makeWorkoutListViewModel()
+        self.historyListViewModel = childViewModelFactory.makeHistoryListViewModel()
     }
 
     func didSelectTab(at index: Int) {
@@ -51,9 +67,13 @@ final class HomeContainerViewModel: HomeContainerViewModelProtocol {
         selectedTab = tab
     }
 
-    private func bind() {
-        Task { @MainActor in
-            viewDelegate?.bind(viewModel: self)
-        }
+    // The container owns the toolbar, so it forwards the Workouts tab's actions
+    // rather than the view reaching into a child view model itself.
+    func didTapCreateWorkout() {
+        workoutListViewModel.didTapCreateWorkout()
+    }
+
+    func didTapManageExercises() {
+        workoutListViewModel.didTapManageExercises()
     }
 }

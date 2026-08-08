@@ -1,12 +1,14 @@
 import Foundation
+import Observation
 
-protocol WorkoutListViewModelProtocol: AnyObject {
+@MainActor
+protocol WorkoutListViewModelProtocol: AnyObject, Observable {
     var title: String { get }
     var workouts: [Workout] { get }
     var emptyStateMessage: String { get }
     var isEmpty: Bool { get }
-    var viewDelegate: (any WorkoutListViewModelViewDelegate)? { get set }
 
+    func onAppear()
     func subtitle(for workout: Workout) -> String
     func didSelectWorkout(at index: Int)
     func didSelectEditWorkout(at index: Int)
@@ -14,27 +16,17 @@ protocol WorkoutListViewModelProtocol: AnyObject {
     func didTapManageExercises()
 }
 
-protocol WorkoutListViewModelViewDelegate: AnyObject {
-    func bind(viewModel: any WorkoutListViewModelProtocol)
-}
-
+@Observable
+@MainActor
 final class WorkoutListViewModel: WorkoutListViewModelProtocol {
-    private let workoutService: any WorkoutService
-    private let navigator: any Navigator
-
-    weak var viewDelegate: (any WorkoutListViewModelViewDelegate)? {
-        didSet { loadWorkouts() }
-    }
+    @ObservationIgnored private let workoutService: any WorkoutService
+    @ObservationIgnored private let exerciseService: any ExerciseService
+    @ObservationIgnored private let navigator: any Navigator
 
     let title = "Workouts"
 
-    var workouts: [Workout] = [] {
-        didSet { bind() }
-    }
-
-    var emptyStateMessage = "" {
-        didSet { bind() }
-    }
+    var workouts: [Workout] = []
+    var emptyStateMessage = ""
 
     var isEmpty: Bool {
         workouts.isEmpty
@@ -42,10 +34,21 @@ final class WorkoutListViewModel: WorkoutListViewModelProtocol {
 
     init(
         workoutService: any WorkoutService,
+        exerciseService: any ExerciseService,
         navigator: any Navigator
     ) {
         self.workoutService = workoutService
+        self.exerciseService = exerciseService
         self.navigator = navigator
+
+        // Deleting an exercise rewrites the workouts that contained it, so this
+        // list has to follow exercise changes as well as its own.
+        workoutService.addConsumer(self)
+        exerciseService.addConsumer(self)
+    }
+
+    func onAppear() {
+        loadWorkouts()
     }
 
     func subtitle(for workout: Workout) -> String {
@@ -68,9 +71,7 @@ final class WorkoutListViewModel: WorkoutListViewModelProtocol {
     }
 
     private func presentForm(mode: WorkoutFormMode) {
-        navigator.navigate(.modal(.workoutForm(mode: mode, onSave: { [weak self] in
-            self?.loadWorkouts()
-        })))
+        navigator.navigate(.modal(.workoutForm(mode: mode)))
     }
 
     func didTapManageExercises() {
@@ -86,10 +87,20 @@ final class WorkoutListViewModel: WorkoutListViewModelProtocol {
             emptyStateMessage = "Couldn't load your workouts.\n\(error.localizedDescription)"
         }
     }
+}
 
-    private func bind() {
-        Task { @MainActor in
-            viewDelegate?.bind(viewModel: self)
-        }
+// MARK: - WorkoutServiceConsumer
+
+extension WorkoutListViewModel: WorkoutServiceConsumer {
+    nonisolated func workoutsDidChange(workoutService: any WorkoutService) {
+        Task { @MainActor in loadWorkouts() }
+    }
+}
+
+// MARK: - ExerciseServiceConsumer
+
+extension WorkoutListViewModel: ExerciseServiceConsumer {
+    nonisolated func exercisesDidChange(exerciseService: any ExerciseService) {
+        Task { @MainActor in loadWorkouts() }
     }
 }

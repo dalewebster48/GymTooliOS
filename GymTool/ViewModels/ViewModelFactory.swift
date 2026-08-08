@@ -1,5 +1,6 @@
 import Foundation
 
+@MainActor
 final class ViewModelFactory {
     private let services: ServicesContainer
     private let navigator: any Navigator
@@ -13,21 +14,7 @@ final class ViewModelFactory {
     }
 
     func makeHomeContainerViewModel() -> any HomeContainerViewModelProtocol {
-        HomeContainerViewModel()
-    }
-
-    func makeWorkoutListViewModel() -> any WorkoutListViewModelProtocol {
-        WorkoutListViewModel(
-            workoutService: services.workoutService,
-            navigator: navigator
-        )
-    }
-
-    func makeHistoryListViewModel() -> any HistoryListViewModelProtocol {
-        HistoryListViewModel(
-            workoutEntryService: services.workoutEntryService,
-            navigator: navigator
-        )
+        HomeContainerViewModel(childViewModelFactory: self)
     }
 
     func makeHistoryDetailViewModel(entryId: String) -> any HistoryDetailViewModelProtocol {
@@ -44,28 +31,20 @@ final class ViewModelFactory {
         )
     }
 
-    func makeExerciseFormViewModel(
-        mode: ExerciseFormMode,
-        onSave: @escaping () -> Void
-    ) -> any ExerciseFormViewModelProtocol {
+    func makeExerciseFormViewModel(mode: ExerciseFormMode) -> any ExerciseFormViewModelProtocol {
         ExerciseFormViewModel(
             mode: mode,
             exerciseService: services.exerciseService,
-            navigator: navigator,
-            onSave: onSave
+            navigator: navigator
         )
     }
 
-    func makeWorkoutFormViewModel(
-        mode: WorkoutFormMode,
-        onSave: @escaping () -> Void
-    ) -> any WorkoutFormViewModelProtocol {
+    func makeWorkoutFormViewModel(mode: WorkoutFormMode) -> any WorkoutFormViewModelProtocol {
         WorkoutFormViewModel(
             mode: mode,
             exerciseService: services.exerciseService,
             workoutService: services.workoutService,
-            navigator: navigator,
-            onSave: onSave
+            navigator: navigator
         )
     }
 
@@ -75,6 +54,25 @@ final class ViewModelFactory {
             workoutService: services.workoutService,
             workoutEntryService: services.workoutEntryService,
             exerciseViewModelFactory: self,
+            navigator: navigator
+        )
+    }
+}
+
+// MARK: - HomeContainerChildViewModelFactory
+
+extension ViewModelFactory: HomeContainerChildViewModelFactory {
+    func makeWorkoutListViewModel() -> any WorkoutListViewModelProtocol {
+        WorkoutListViewModel(
+            workoutService: services.workoutService,
+            exerciseService: services.exerciseService,
+            navigator: navigator
+        )
+    }
+
+    func makeHistoryListViewModel() -> any HistoryListViewModelProtocol {
+        HistoryListViewModel(
+            workoutEntryService: services.workoutEntryService,
             navigator: navigator
         )
     }

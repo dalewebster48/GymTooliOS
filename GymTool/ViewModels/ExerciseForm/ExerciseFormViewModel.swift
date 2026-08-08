@@ -1,13 +1,15 @@
 import Foundation
+import Observation
 
 /// Whether the exercise form is creating a new exercise or editing one that
 /// already exists. The screen is otherwise identical in both cases.
-enum ExerciseFormMode {
+enum ExerciseFormMode: Hashable {
     case create
     case edit(Exercise)
 }
 
-protocol ExerciseFormViewModelProtocol: AnyObject {
+@MainActor
+protocol ExerciseFormViewModelProtocol: AnyObject, Observable {
     var title: String { get }
     var name: String { get }
     var details: String { get }
@@ -18,40 +20,32 @@ protocol ExerciseFormViewModelProtocol: AnyObject {
     var deleteConfirmationTitle: String { get }
     var deleteConfirmationMessage: String { get }
     var errorMessage: String? { get }
-    var viewDelegate: (any ExerciseFormViewModelViewDelegate)? { get set }
-
+    var isConfirmingDelete: Bool { get }
     func didUpdateName(_ name: String)
     func didUpdateDetails(_ details: String)
     func didTapSave()
+    func didTapDelete()
     func didConfirmDelete()
+    func didCancelDelete()
     func didTapCancel()
 }
 
-protocol ExerciseFormViewModelViewDelegate: AnyObject {
-    func bind(viewModel: any ExerciseFormViewModelProtocol)
-}
-
+@Observable
+@MainActor
 final class ExerciseFormViewModel: ExerciseFormViewModelProtocol {
-    private let mode: ExerciseFormMode
-    private let exerciseService: any ExerciseService
-    private let navigator: any Navigator
-    private let onSave: () -> Void
+    @ObservationIgnored private let mode: ExerciseFormMode
+    @ObservationIgnored private let exerciseService: any ExerciseService
+    @ObservationIgnored private let navigator: any Navigator
 
-    weak var viewDelegate: (any ExerciseFormViewModelViewDelegate)? {
-        didSet { bind() }
-    }
+    var name: String
 
-    var name: String {
-        didSet { bind() }
-    }
+    var details: String
 
-    var details: String {
-        didSet { bind() }
-    }
+    var errorMessage: String?
 
-    var errorMessage: String? {
-        didSet { bind() }
-    }
+    /// Owned here rather than by the view so the whole delete flow stays in
+    /// one testable place.
+    var isConfirmingDelete = false
 
     var title: String {
         switch mode {
@@ -78,13 +72,11 @@ final class ExerciseFormViewModel: ExerciseFormViewModelProtocol {
     init(
         mode: ExerciseFormMode,
         exerciseService: any ExerciseService,
-        navigator: any Navigator,
-        onSave: @escaping () -> Void
+        navigator: any Navigator
     ) {
         self.mode = mode
         self.exerciseService = exerciseService
         self.navigator = navigator
-        self.onSave = onSave
 
         switch mode {
         case .create:
@@ -121,19 +113,27 @@ final class ExerciseFormViewModel: ExerciseFormViewModelProtocol {
                     details: details.trimmed
                 )
             }
-            onSave()
             navigator.dismiss()
         } catch {
             errorMessage = "Couldn't save this exercise. \(error.localizedDescription)"
         }
     }
 
+    func didTapDelete() {
+        isConfirmingDelete = true
+    }
+
+    func didCancelDelete() {
+        isConfirmingDelete = false
+    }
+
     func didConfirmDelete() {
+        isConfirmingDelete = false
+
         guard case .edit(let exercise) = mode else { return }
 
         do {
             try exerciseService.deleteExercise(id: exercise.id)
-            onSave()
             navigator.dismiss()
         } catch {
             errorMessage = "Couldn't delete this exercise. \(error.localizedDescription)"
@@ -142,11 +142,5 @@ final class ExerciseFormViewModel: ExerciseFormViewModelProtocol {
 
     func didTapCancel() {
         navigator.dismiss()
-    }
-
-    private func bind() {
-        Task { @MainActor in
-            viewDelegate?.bind(viewModel: self)
-        }
     }
 }

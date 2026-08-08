@@ -1,10 +1,17 @@
 import Foundation
 
+protocol WorkoutEntryServiceConsumer: AnyObject {
+    func entriesDidChange(workoutEntryService: any WorkoutEntryService)
+}
+
 protocol WorkoutEntryService: AnyObject {
     func logWorkout(workoutId: String, exerciseEntries: [ExerciseEntry], caloriesBurnt: Int?) throws
     func fetchHistory() throws -> [WorkoutHistoryItem]
     func fetchHistoryDetail(entryId: String) throws -> WorkoutHistoryDetail?
     func deleteEntry(id: String) throws
+
+    func addConsumer(_ consumer: any WorkoutEntryServiceConsumer)
+    func removeConsumer(_ consumer: any WorkoutEntryServiceConsumer)
 }
 
 final class WorkoutEntryServiceImpl: WorkoutEntryService {
@@ -16,6 +23,11 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
     private let workoutEntryRepository: any WorkoutEntryRepository
     private let workoutRepository: any WorkoutRepository
     private let exerciseRepository: any ExerciseRepository
+
+    private var _consumers: NSHashTable<AnyObject> = .weakObjects()
+    private var consumers: [any WorkoutEntryServiceConsumer] {
+        _consumers.allObjects.compactMap { $0 as? WorkoutEntryServiceConsumer }
+    }
 
     init(
         workoutEntryRepository: any WorkoutEntryRepository,
@@ -40,6 +52,19 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
             exerciseEntries: exerciseEntries
         )
         try workoutEntryRepository.insert(entry)
+        notifyConsumers()
+    }
+
+    func addConsumer(_ consumer: any WorkoutEntryServiceConsumer) {
+        _consumers.add(consumer)
+    }
+
+    func removeConsumer(_ consumer: any WorkoutEntryServiceConsumer) {
+        _consumers.remove(consumer)
+    }
+
+    private func notifyConsumers() {
+        consumers.forEach { $0.entriesDidChange(workoutEntryService: self) }
     }
 
     func fetchHistory() throws -> [WorkoutHistoryItem] {
@@ -84,6 +109,7 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
 
     func deleteEntry(id: String) throws {
         try workoutEntryRepository.delete(id: id)
+        notifyConsumers()
     }
 
     private func workoutNamesById() throws -> [String: String] {
