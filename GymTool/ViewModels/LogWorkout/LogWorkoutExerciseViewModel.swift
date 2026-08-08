@@ -7,13 +7,17 @@ protocol LogWorkoutExerciseViewModelProtocol: AnyObject, Observable {
     var exerciseName: String { get }
     var exerciseDetails: String { get }
     var sets: [WorkoutSet] { get }
+    /// A workout always keeps at least one set, so the last one can't be removed.
+    var canRemoveSet: Bool { get }
 
-    func repsText(at index: Int) -> String
-    func weightText(at index: Int) -> String
+    /// The 1-based position of a set, for display.
+    func setNumber(forSetId id: String) -> Int
+    func repsText(forSetId id: String) -> String
+    func weightText(forSetId id: String) -> String
     func addSet()
-    func removeSet(at index: Int)
-    func updateReps(_ text: String, at index: Int)
-    func updateWeight(_ text: String, at index: Int)
+    func removeSet(id: String)
+    func updateReps(_ text: String, setId: String)
+    func updateWeight(_ text: String, setId: String)
     /// The sets logged against this exercise, or `nil` when nothing usable was
     /// entered — a set with no reps is not worth persisting.
     func makeExerciseEntry() -> ExerciseEntry?
@@ -32,18 +36,24 @@ final class LogWorkoutExerciseViewModel: LogWorkoutExerciseViewModelProtocol {
     var exerciseName: String { exercise.name }
     var exerciseDetails: String { exercise.details }
 
+    var canRemoveSet: Bool { sets.count > 1 }
+
     init(exercise: Exercise) {
         self.exercise = exercise
         sets = [makeEmptySet()]
     }
 
-    func repsText(at index: Int) -> String {
-        guard let set = sets[safe: index], set.reps > 0 else { return "" }
+    func setNumber(forSetId id: String) -> Int {
+        (index(ofSetId: id) ?? 0) + 1
+    }
+
+    func repsText(forSetId id: String) -> String {
+        guard let set = set(id: id), set.reps > 0 else { return "" }
         return String(set.reps)
     }
 
-    func weightText(at index: Int) -> String {
-        guard let set = sets[safe: index], set.weight > 0 else { return "" }
+    func weightText(forSetId id: String) -> String {
+        guard let set = set(id: id), set.weight > 0 else { return "" }
         return set.weight.formattedWeight
     }
 
@@ -51,13 +61,14 @@ final class LogWorkoutExerciseViewModel: LogWorkoutExerciseViewModelProtocol {
         sets.append(makeEmptySet())
     }
 
-    func removeSet(at index: Int) {
-        guard sets.indices.contains(index) else { return }
+    func removeSet(id: String) {
+        guard canRemoveSet, let index = index(ofSetId: id) else { return }
         sets.remove(at: index)
     }
 
-    func updateReps(_ text: String, at index: Int) {
-        guard let set = sets[safe: index] else { return }
+    func updateReps(_ text: String, setId: String) {
+        guard let index = index(ofSetId: setId) else { return }
+        let set = sets[index]
         sets[index] = WorkoutSet(
             id: set.id,
             reps: Int(text.trimmed) ?? 0,
@@ -65,8 +76,9 @@ final class LogWorkoutExerciseViewModel: LogWorkoutExerciseViewModelProtocol {
         )
     }
 
-    func updateWeight(_ text: String, at index: Int) {
-        guard let set = sets[safe: index] else { return }
+    func updateWeight(_ text: String, setId: String) {
+        guard let index = index(ofSetId: setId) else { return }
+        let set = sets[index]
         sets[index] = WorkoutSet(
             id: set.id,
             reps: set.reps,
@@ -78,6 +90,14 @@ final class LogWorkoutExerciseViewModel: LogWorkoutExerciseViewModelProtocol {
         let completedSets = sets.filter { $0.reps > 0 }
         guard !completedSets.isEmpty else { return nil }
         return ExerciseEntry(exerciseId: exercise.id, sets: completedSets)
+    }
+
+    private func set(id: String) -> WorkoutSet? {
+        sets.first { $0.id == id }
+    }
+
+    private func index(ofSetId id: String) -> Int? {
+        sets.firstIndex { $0.id == id }
     }
 
     private func makeEmptySet() -> WorkoutSet {

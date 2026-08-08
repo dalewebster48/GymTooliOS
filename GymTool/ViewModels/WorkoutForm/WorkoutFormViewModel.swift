@@ -23,12 +23,11 @@ protocol WorkoutFormViewModelProtocol: AnyObject, Observable {
     var errorMessage: String? { get }
     var isConfirmingDelete: Bool { get }
     func onAppear()
-    func isSelected(at index: Int) -> Bool
     /// The 1-based position of an exercise in the workout, or `nil` when it is
     /// not selected. Selection order is the order the exercises are performed.
-    func selectionOrder(at index: Int) -> Int?
+    func selectionOrder(forExerciseId id: String) -> Int?
     func didUpdateName(_ name: String)
-    func didToggleExercise(at index: Int)
+    func didToggleExercise(id: String)
     func didTapSave()
     func didTapDelete()
     func didConfirmDelete()
@@ -110,13 +109,8 @@ final class WorkoutFormViewModel: WorkoutFormViewModelProtocol {
         loadExercises()
     }
 
-    func isSelected(at index: Int) -> Bool {
-        selectionOrder(at: index) != nil
-    }
-
-    func selectionOrder(at index: Int) -> Int? {
-        guard let exercise = exercises[safe: index] else { return nil }
-        guard let position = selectedExerciseIds.firstIndex(of: exercise.id) else { return nil }
+    func selectionOrder(forExerciseId id: String) -> Int? {
+        guard let position = selectedExerciseIds.firstIndex(of: id) else { return nil }
         return position + 1
     }
 
@@ -124,13 +118,13 @@ final class WorkoutFormViewModel: WorkoutFormViewModelProtocol {
         self.name = name
     }
 
-    func didToggleExercise(at index: Int) {
-        guard let exercise = exercises[safe: index] else { return }
+    func didToggleExercise(id: String) {
+        guard exercises.contains(where: { $0.id == id }) else { return }
 
-        if let position = selectedExerciseIds.firstIndex(of: exercise.id) {
+        if let position = selectedExerciseIds.firstIndex(of: id) {
             selectedExerciseIds.remove(at: position)
         } else {
-            selectedExerciseIds.append(exercise.id)
+            selectedExerciseIds.append(id)
         }
     }
 

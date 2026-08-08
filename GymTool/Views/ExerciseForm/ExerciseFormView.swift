@@ -1,25 +1,26 @@
 import SwiftUI
 
 struct ExerciseFormView: View {
-    let viewModel: any ExerciseFormViewModelProtocol
+    /// Held in `@State` so the instance survives re-renders. SwiftUI re-invokes
+    /// the sheet / navigationDestination closure that built this view, and a
+    /// fresh view model on each pass would wipe whatever the screen had.
+    @State private var viewModel: any ExerciseFormViewModelProtocol
+
+    init(viewModel: any ExerciseFormViewModelProtocol) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     @FocusState private var isNameFocused: Bool
 
     var body: some View {
         Form {
             Section("NAME") {
-                TextField("e.g. Bench Press", text: Binding(
-                    get: { viewModel.name },
-                    set: { viewModel.didUpdateName($0) }
-                ))
+                TextField("e.g. Bench Press", text: .action(viewModel.name, viewModel.didUpdateName))
                 .focused($isNameFocused)
             }
 
             Section("DESCRIPTION") {
-                TextEditor(text: Binding(
-                    get: { viewModel.details },
-                    set: { viewModel.didUpdateDetails($0) }
-                ))
+                TextEditor(text: .action(viewModel.details, viewModel.didUpdateDetails))
                 .frame(minHeight: 100)
             }
 
@@ -56,10 +57,7 @@ struct ExerciseFormView: View {
         }
         .confirmationDialog(
             viewModel.deleteConfirmationTitle,
-            isPresented: Binding(
-                get: { viewModel.isConfirmingDelete },
-                set: { if !$0 { viewModel.didCancelDelete() } }
-            ),
+            isPresented: .presented(viewModel.isConfirmingDelete, onDismiss: viewModel.didCancelDelete),
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) { viewModel.didConfirmDelete() }

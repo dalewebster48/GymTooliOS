@@ -5,9 +5,9 @@ struct WorkoutListView: View {
 
     var body: some View {
         List {
-            ForEach(Array(viewModel.workouts.enumerated()), id: \.element.id) { index, workout in
+            ForEach(viewModel.workouts) { workout in
                 Button {
-                    viewModel.didSelectWorkout(at: index)
+                    viewModel.didSelectWorkout(id: workout.id)
                 } label: {
                     WorkoutRow(
                         name: workout.name,
@@ -19,7 +19,7 @@ struct WorkoutListView: View {
                     // Deliberately not destructive — deleting lives inside the
                     // edit screen, behind a confirmation.
                     Button("Edit") {
-                        viewModel.didSelectEditWorkout(at: index)
+                        viewModel.didSelectEditWorkout(id: workout.id)
                     }
                     .tint(Theme.primaryAccent)
                 }

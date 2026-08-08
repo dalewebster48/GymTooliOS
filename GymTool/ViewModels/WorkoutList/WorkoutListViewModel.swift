@@ -10,8 +10,8 @@ protocol WorkoutListViewModelProtocol: AnyObject, Observable {
 
     func onAppear()
     func subtitle(for workout: Workout) -> String
-    func didSelectWorkout(at index: Int)
-    func didSelectEditWorkout(at index: Int)
+    func didSelectWorkout(id: String)
+    func didSelectEditWorkout(id: String)
     func didTapCreateWorkout()
     func didTapManageExercises()
 }
@@ -56,14 +56,18 @@ final class WorkoutListViewModel: WorkoutListViewModelProtocol {
         return count == 1 ? "1 exercise" : "\(count) exercises"
     }
 
-    func didSelectWorkout(at index: Int) {
-        guard let workout = workouts[safe: index] else { return }
+    func didSelectWorkout(id: String) {
+        guard let workout = workout(id: id) else { return }
         navigator.navigate(.modal(.logWorkout(workoutId: workout.id)))
     }
 
-    func didSelectEditWorkout(at index: Int) {
-        guard let workout = workouts[safe: index] else { return }
+    func didSelectEditWorkout(id: String) {
+        guard let workout = workout(id: id) else { return }
         presentForm(mode: .edit(workout))
+    }
+
+    private func workout(id: String) -> Workout? {
+        workouts.first { $0.id == id }
     }
 
     func didTapCreateWorkout() {

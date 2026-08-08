@@ -1,17 +1,33 @@
 import SwiftUI
 
 extension Binding {
-    /// Builds a binding whose writes go through a view model action method
-    /// rather than straight into a stored property.
+    /// A binding that reads a view model property and writes through one of its
+    /// action methods.
     ///
-    /// `@Bindable` would be the shorter route, but it needs a concrete
-    /// `Observable` type — views here hold `any …ViewModelProtocol` — and it
-    /// writes to the property directly, bypassing any validation the view model
-    /// does on the way in. Routing through an action keeps that funnel intact.
+    ///     TextField("Name", text: .action(viewModel.name, viewModel.didUpdateName))
+    ///
+    /// `@Bindable` would be shorter, but it needs a concrete `Observable` type
+    /// — views here hold `any …ViewModelProtocol` — and it writes straight to
+    /// the stored property, bypassing any validation on the way in. Routing
+    /// through an action keeps every mutation funnelled through one method.
     static func action(
-        get: @escaping () -> Value,
-        set: @escaping (Value) -> Void
+        _ value: @escaping @autoclosure () -> Value,
+        _ setter: @escaping (Value) -> Void
     ) -> Binding<Value> {
-        Binding(get: get, set: set)
+        Binding(get: value, set: setter)
+    }
+}
+
+extension Binding where Value == Bool {
+    /// A presentation flag the view model owns. Presenting is triggered by an
+    /// action method, so only dismissal is reported back.
+    static func presented(
+        _ isPresented: @escaping @autoclosure () -> Bool,
+        onDismiss: @escaping () -> Void
+    ) -> Binding<Bool> {
+        Binding(
+            get: isPresented,
+            set: { if !$0 { onDismiss() } }
+        )
     }
 }

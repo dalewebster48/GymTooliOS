@@ -9,7 +9,8 @@ struct GymToolApp: App {
         WindowGroup {
             RootView(
                 navigator: appContext.navigator,
-                viewFactory: appContext.viewFactory
+                viewFactory: appContext.viewFactory,
+                homeContainerViewModel: appContext.homeContainerViewModel
             )
         }
     }

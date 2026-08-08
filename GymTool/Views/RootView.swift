@@ -5,12 +5,14 @@ import SwiftUI
 struct RootView: View {
     @Bindable var navigator: AppNavigator
     let viewFactory: ViewFactory
+    /// Passed in rather than built here — see `AppContext.homeContainerViewModel`.
+    let homeContainerViewModel: any HomeContainerViewModelProtocol
 
     var body: some View {
         NavigationStack(path: $navigator.path) {
-            viewFactory.makeHomeContainerView()
+            viewFactory.makeHomeContainerView(viewModel: homeContainerViewModel)
                 .navigationDestination(for: NavigationRoute.self) { route in
-                    viewFactory.view(for: route)
+                    routedView(for: route)
                 }
         }
         .sheet(isPresented: isPresented(level: 0)) {
@@ -29,9 +31,17 @@ struct RootView: View {
     private func sheetContent(level: Int) -> some View {
         if let route = navigator.modalStack[safe: level] {
             NavigationStack {
-                viewFactory.view(for: route)
+                routedView(for: route)
             }
         }
+    }
+
+    /// `.id(route)` ties the screen's SwiftUI identity to the route it came
+    /// from. Without it, replacing the route at a given position would reuse
+    /// the previous screen's `@State` — and so its view model.
+    private func routedView(for route: NavigationRoute) -> some View {
+        viewFactory.view(for: route)
+            .id(route)
     }
 
     /// Dismissing a sheet by swipe unwinds the stack to that level, which is

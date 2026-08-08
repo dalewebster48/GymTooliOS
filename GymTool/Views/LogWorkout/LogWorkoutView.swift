@@ -1,51 +1,25 @@
 import SwiftUI
 
 struct LogWorkoutView: View {
-    let viewModel: any LogWorkoutViewModelProtocol
+    /// Held in `@State` so the instance survives re-renders. SwiftUI re-invokes
+    /// the sheet / navigationDestination closure that built this view, and a
+    /// fresh view model on each pass would wipe whatever the screen had.
+    @State private var viewModel: any LogWorkoutViewModelProtocol
+
+    init(viewModel: any LogWorkoutViewModelProtocol) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         List {
-            ForEach(Array(viewModel.exerciseViewModels.enumerated()), id: \.element.exerciseId) { exerciseIndex, exerciseViewModel in
-                Section {
-                    ForEach(Array(exerciseViewModel.sets.enumerated()), id: \.element.id) { setIndex, _ in
-                        SetInputRow(
-                            setNumber: setIndex + 1,
-                            reps: Binding(
-                                get: { exerciseViewModel.repsText(at: setIndex) },
-                                set: { viewModel.didUpdateReps($0, setIndex: setIndex, exerciseIndex: exerciseIndex) }
-                            ),
-                            weight: Binding(
-                                get: { exerciseViewModel.weightText(at: setIndex) },
-                                set: { viewModel.didUpdateWeight($0, setIndex: setIndex, exerciseIndex: exerciseIndex) }
-                            )
-                        )
-                        // A workout always keeps at least one set.
-                        .deleteDisabled(exerciseViewModel.sets.count <= 1)
-                    }
-                    .onDelete { offsets in
-                        guard let setIndex = offsets.first else { return }
-                        viewModel.didDeleteSet(setIndex: setIndex, exerciseIndex: exerciseIndex)
-                    }
-                } header: {
-                    Text(exerciseViewModel.exerciseName)
-                } footer: {
-                    Button {
-                        viewModel.didTapAddSet(inExerciseAt: exerciseIndex)
-                    } label: {
-                        Label("Add Set", systemImage: "plus.circle.fill")
-                            .font(.subheadline)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Theme.primaryAccent)
-                    .padding(.vertical, 8)
-                }
+            ForEach(viewModel.exerciseViewModels, id: \.exerciseId) { exerciseViewModel in
+                exerciseSection(exerciseViewModel)
             }
 
             Section {
-                SessionSummaryView(calories: Binding(
-                    get: { viewModel.caloriesText },
-                    set: { viewModel.didUpdateCalories($0) }
-                ))
+                SessionSummaryView(
+                    calories: .action(viewModel.caloriesText, viewModel.didUpdateCalories)
+                )
             }
 
             if let errorMessage = viewModel.errorMessage {
@@ -73,5 +47,47 @@ struct LogWorkoutView: View {
             }
         }
         .onAppear { viewModel.onAppear() }
+    }
+
+    @ViewBuilder
+    private func exerciseSection(
+        _ exerciseViewModel: any LogWorkoutExerciseViewModelProtocol
+    ) -> some View {
+        let exerciseId = exerciseViewModel.exerciseId
+
+        Section {
+            ForEach(exerciseViewModel.sets) { set in
+                SetInputRow(
+                    setNumber: exerciseViewModel.setNumber(forSetId: set.id),
+                    reps: .action(
+                        exerciseViewModel.repsText(forSetId: set.id),
+                        { viewModel.didUpdateReps($0, setId: set.id, exerciseId: exerciseId) }
+                    ),
+                    weight: .action(
+                        exerciseViewModel.weightText(forSetId: set.id),
+                        { viewModel.didUpdateWeight($0, setId: set.id, exerciseId: exerciseId) }
+                    )
+                )
+                .deleteDisabled(!exerciseViewModel.canRemoveSet)
+            }
+            .onDelete { offsets in
+                let ids = offsets.map { exerciseViewModel.sets[$0].id }
+                for id in ids {
+                    viewModel.didDeleteSet(setId: id, exerciseId: exerciseId)
+                }
+            }
+        } header: {
+            Text(exerciseViewModel.exerciseName)
+        } footer: {
+            Button {
+                viewModel.didTapAddSet(exerciseId: exerciseId)
+            } label: {
+                Label("Add Set", systemImage: "plus.circle.fill")
+                    .font(.subheadline)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(Theme.primaryAccent)
+            .padding(.vertical, 8)
+        }
     }
 }

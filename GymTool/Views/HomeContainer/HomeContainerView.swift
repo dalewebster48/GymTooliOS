@@ -2,17 +2,22 @@ import SwiftUI
 
 struct HomeContainerView: View {
     let viewModel: any HomeContainerViewModelProtocol
+    let viewFactory: ViewFactory
 
     var body: some View {
         TabView(selection: selectedTabBinding) {
-            WorkoutListView(viewModel: viewModel.workoutListViewModel)
+            viewFactory.makeWorkoutListView(viewModel: viewModel.workoutListViewModel)
                 .tag(HomeTab.workouts)
 
-            HistoryListView(viewModel: viewModel.historyListViewModel)
+            viewFactory.makeHistoryListView(viewModel: viewModel.historyListViewModel)
                 .tag(HomeTab.history)
         }
         .tabViewStyle(.page(indexDisplayMode: .never))
         .background(Theme.background)
+        // The segmented control is the title. Without this the bar defaults to
+        // large-title mode and reserves an empty row beneath the toolbar, which
+        // the UIKit `titleView` this replaces never did.
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Picker("", selection: selectedTabBinding) {

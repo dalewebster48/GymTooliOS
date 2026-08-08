@@ -1,7 +1,14 @@
 import SwiftUI
 
 struct HistoryDetailView: View {
-    let viewModel: any HistoryDetailViewModelProtocol
+    /// Held in `@State` so the instance survives re-renders. SwiftUI re-invokes
+    /// the sheet / navigationDestination closure that built this view, and a
+    /// fresh view model on each pass would wipe whatever the screen had.
+    @State private var viewModel: any HistoryDetailViewModelProtocol
+
+    init(viewModel: any HistoryDetailViewModelProtocol) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         List {
@@ -21,9 +28,9 @@ struct HistoryDetailView: View {
 
             ForEach(viewModel.exercises) { exercise in
                 Section(exercise.name) {
-                    ForEach(Array(exercise.sets.enumerated()), id: \.element.id) { index, set in
+                    ForEach(exercise.sets) { set in
                         LoggedSetRow(
-                            setNumber: viewModel.setNumberText(at: index),
+                            setNumber: viewModel.setNumberText(forSetId: set.id),
                             detail: viewModel.setDetailText(for: set)
                         )
                     }

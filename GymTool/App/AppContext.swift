@@ -9,6 +9,11 @@ final class AppContext {
     let navigator: AppNavigator
     let viewFactory: ViewFactory
 
+    /// The root screen's view model, built once here rather than inside a view
+    /// body. A view body runs on every render, so a view model created there
+    /// would be replaced — along with its loaded data — on the next pass.
+    let homeContainerViewModel: any HomeContainerViewModelProtocol
+
     init() {
         let databaseProvider: any DatabaseProvider
         do {
@@ -33,5 +38,6 @@ final class AppContext {
         self.navigator = navigator
         self.viewModelFactory = viewModelFactory
         self.viewFactory = viewFactory
+        self.homeContainerViewModel = viewModelFactory.makeHomeContainerViewModel()
     }
 }

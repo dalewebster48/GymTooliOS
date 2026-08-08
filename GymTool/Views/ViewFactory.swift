@@ -10,8 +10,27 @@ final class ViewFactory {
         self.viewModelFactory = viewModelFactory
     }
 
-    func makeHomeContainerView() -> HomeContainerView {
-        HomeContainerView(viewModel: viewModelFactory.makeHomeContainerViewModel())
+    // The home container and its two pages take their view models rather than
+    // making them. Those view models live for as long as the app does and are
+    // owned by `AppContext`; only the routed screens below get a view model
+    // minted per presentation.
+
+    func makeHomeContainerView(
+        viewModel: any HomeContainerViewModelProtocol
+    ) -> HomeContainerView {
+        HomeContainerView(viewModel: viewModel, viewFactory: self)
+    }
+
+    func makeWorkoutListView(
+        viewModel: any WorkoutListViewModelProtocol
+    ) -> WorkoutListView {
+        WorkoutListView(viewModel: viewModel)
+    }
+
+    func makeHistoryListView(
+        viewModel: any HistoryListViewModelProtocol
+    ) -> HistoryListView {
+        HistoryListView(viewModel: viewModel)
     }
 
     /// `@ViewBuilder` lets the switch return different concrete view types

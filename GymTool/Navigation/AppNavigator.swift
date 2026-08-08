@@ -6,6 +6,9 @@ import Observation
 @Observable
 @MainActor
 final class AppNavigator: Navigator {
+    /// How many stacked sheets `RootView` is wired to present.
+    static let maximumModalDepth = 2
+
     /// The push stack, bound to the root `NavigationStack`. The root screen is
     /// not in here — this is everything on top of it.
     var path: [NavigationRoute] = []
@@ -22,6 +25,13 @@ final class AppNavigator: Navigator {
             path.append(route)
 
         case .modal(let route):
+            // `RootView` presents a fixed two-level chain, so a third stacked
+            // sheet would be recorded here and never shown. Fail loudly rather
+            // than silently doing nothing.
+            assert(
+                modalStack.count < Self.maximumModalDepth,
+                "RootView presents at most \(Self.maximumModalDepth) stacked sheets"
+            )
             modalStack.append(route)
         }
     }

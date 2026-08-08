@@ -1,13 +1,20 @@
 import SwiftUI
 
 struct ExerciseListView: View {
-    let viewModel: any ExerciseListViewModelProtocol
+    /// Held in `@State` so the instance survives re-renders. SwiftUI re-invokes
+    /// the sheet / navigationDestination closure that built this view, and a
+    /// fresh view model on each pass would wipe whatever the screen had.
+    @State private var viewModel: any ExerciseListViewModelProtocol
+
+    init(viewModel: any ExerciseListViewModelProtocol) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         List {
-            ForEach(Array(viewModel.exercises.enumerated()), id: \.element.id) { index, exercise in
+            ForEach(viewModel.exercises) { exercise in
                 Button {
-                    viewModel.didSelectExercise(at: index)
+                    viewModel.didSelectExercise(id: exercise.id)
                 } label: {
                     ExerciseRow(name: exercise.name, details: exercise.details)
                 }

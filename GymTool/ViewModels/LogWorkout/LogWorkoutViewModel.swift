@@ -18,11 +18,11 @@ protocol LogWorkoutViewModelProtocol: AnyObject, Observable {
     var caloriesText: String { get }
 
     func onAppear()
-    func didTapAddSet(inExerciseAt exerciseIndex: Int)
+    func didTapAddSet(exerciseId: String)
     func didUpdateCalories(_ text: String)
-    func didUpdateReps(_ text: String, setIndex: Int, exerciseIndex: Int)
-    func didUpdateWeight(_ text: String, setIndex: Int, exerciseIndex: Int)
-    func didDeleteSet(setIndex: Int, exerciseIndex: Int)
+    func didUpdateReps(_ text: String, setId: String, exerciseId: String)
+    func didUpdateWeight(_ text: String, setId: String, exerciseId: String)
+    func didDeleteSet(setId: String, exerciseId: String)
     func didTapSubmit()
     func didTapCancel()
 }
@@ -68,9 +68,8 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
         loadWorkout()
     }
 
-    func didTapAddSet(inExerciseAt exerciseIndex: Int) {
-        guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
-        exerciseViewModel.addSet()
+    func didTapAddSet(exerciseId: String) {
+        exercise(id: exerciseId)?.addSet()
     }
 
     func didUpdateCalories(_ text: String) {
@@ -78,19 +77,20 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
         caloriesBurnt = Int(text.trimmed)
     }
 
-    func didUpdateReps(_ text: String, setIndex: Int, exerciseIndex: Int) {
-        guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
-        exerciseViewModel.updateReps(text, at: setIndex)
+    func didUpdateReps(_ text: String, setId: String, exerciseId: String) {
+        exercise(id: exerciseId)?.updateReps(text, setId: setId)
     }
 
-    func didUpdateWeight(_ text: String, setIndex: Int, exerciseIndex: Int) {
-        guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
-        exerciseViewModel.updateWeight(text, at: setIndex)
+    func didUpdateWeight(_ text: String, setId: String, exerciseId: String) {
+        exercise(id: exerciseId)?.updateWeight(text, setId: setId)
     }
 
-    func didDeleteSet(setIndex: Int, exerciseIndex: Int) {
-        guard let exerciseViewModel = exerciseViewModels[safe: exerciseIndex] else { return }
-        exerciseViewModel.removeSet(at: setIndex)
+    func didDeleteSet(setId: String, exerciseId: String) {
+        exercise(id: exerciseId)?.removeSet(id: setId)
+    }
+
+    private func exercise(id: String) -> (any LogWorkoutExerciseViewModelProtocol)? {
+        exerciseViewModels.first { $0.exerciseId == id }
     }
 
     func didTapSubmit() {

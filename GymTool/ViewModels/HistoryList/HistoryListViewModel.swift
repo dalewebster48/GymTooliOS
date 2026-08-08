@@ -15,8 +15,8 @@ protocol HistoryListViewModelProtocol: AnyObject, Observable {
     func subtitle(for item: WorkoutHistoryItem) -> String
     func detailText(for item: WorkoutHistoryItem) -> String
     func reload()
-    func didSelectItem(at index: Int)
-    func didRequestDeleteItem(at index: Int)
+    func didSelectItem(id: String)
+    func didRequestDeleteItem(id: String)
     func didConfirmDelete()
     func didCancelDelete()
 }
@@ -34,12 +34,13 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
     var items: [WorkoutHistoryItem] = []
     var emptyStateMessage = ""
 
-    /// The row a delete has been requested for. The view only asks whether a
-    /// confirmation is showing; which row it applies to stays in here.
-    private var pendingDeleteIndex: Int?
+    /// The entry a delete has been requested for. The view only asks whether a
+    /// confirmation is showing; which entry it applies to stays in here. Held
+    /// by id rather than index so a refresh mid-confirmation can't retarget it.
+    private var pendingDeleteEntryId: String?
 
     var isConfirmingDelete: Bool {
-        pendingDeleteIndex != nil
+        pendingDeleteEntryId != nil
     }
 
     var isEmpty: Bool {
@@ -86,26 +87,26 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
         }
     }
 
-    func didSelectItem(at index: Int) {
-        guard let item = items[safe: index] else { return }
-        navigator.navigate(.push(.historyDetail(entryId: item.entryId)))
+    func didSelectItem(id: String) {
+        guard items.contains(where: { $0.entryId == id }) else { return }
+        navigator.navigate(.push(.historyDetail(entryId: id)))
     }
 
-    func didRequestDeleteItem(at index: Int) {
-        guard items.indices.contains(index) else { return }
-        pendingDeleteIndex = index
+    func didRequestDeleteItem(id: String) {
+        guard items.contains(where: { $0.entryId == id }) else { return }
+        pendingDeleteEntryId = id
     }
 
     func didCancelDelete() {
-        pendingDeleteIndex = nil
+        pendingDeleteEntryId = nil
     }
 
     func didConfirmDelete() {
-        defer { pendingDeleteIndex = nil }
-        guard let index = pendingDeleteIndex, let item = items[safe: index] else { return }
+        defer { pendingDeleteEntryId = nil }
+        guard let entryId = pendingDeleteEntryId else { return }
 
         do {
-            try workoutEntryService.deleteEntry(id: item.entryId)
+            try workoutEntryService.deleteEntry(id: entryId)
         } catch {
             emptyStateMessage = "Couldn't delete that session.\n\(error.localizedDescription)"
         }

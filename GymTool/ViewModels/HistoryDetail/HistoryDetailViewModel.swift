@@ -9,7 +9,7 @@ protocol HistoryDetailViewModelProtocol: AnyObject, Observable {
     var errorMessage: String? { get }
 
     func onAppear()
-    func setNumberText(at index: Int) -> String
+    func setNumberText(forSetId id: String) -> String
     func setDetailText(for set: WorkoutSet) -> String
 }
 
@@ -36,8 +36,13 @@ final class HistoryDetailViewModel: HistoryDetailViewModelProtocol {
         loadDetail()
     }
 
-    func setNumberText(at index: Int) -> String {
-        "Set \(index + 1)"
+    func setNumberText(forSetId id: String) -> String {
+        for exercise in exercises {
+            if let position = exercise.sets.firstIndex(where: { $0.id == id }) {
+                return "Set \(position + 1)"
+            }
+        }
+        return ""
     }
 
     func setDetailText(for set: WorkoutSet) -> String {

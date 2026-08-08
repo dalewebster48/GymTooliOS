@@ -10,7 +10,7 @@ protocol ExerciseListViewModelProtocol: AnyObject, Observable {
 
     func onAppear()
     func didTapCreateExercise()
-    func didSelectExercise(at index: Int)
+    func didSelectExercise(id: String)
     func didTapDone()
 }
 
@@ -47,8 +47,8 @@ final class ExerciseListViewModel: ExerciseListViewModelProtocol {
         presentForm(mode: .create)
     }
 
-    func didSelectExercise(at index: Int) {
-        guard let exercise = exercises[safe: index] else { return }
+    func didSelectExercise(id: String) {
+        guard let exercise = exercises.first(where: { $0.id == id }) else { return }
         presentForm(mode: .edit(exercise))
     }
 
