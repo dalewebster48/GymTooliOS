@@ -33,6 +33,18 @@ enum NavigationRoute: Hashable, Identifiable {
     /// For `.sheet(item:)`. A route fully describes its screen, so it is its
     /// own identity.
     var id: Self { self }
+
+    /// Whether a swipe may dismiss this screen when it is presented as a sheet.
+    /// Screens holding unsaved input must be left deliberately, through Cancel
+    /// or Save — a stray drag should not discard a session you just logged.
+    var allowsInteractiveDismissal: Bool {
+        switch self {
+        case .logWorkout, .workoutForm, .exerciseForm:
+            false
+        case .workoutDetail, .exerciseDetail, .historyDetail:
+            true
+        }
+    }
 }
 
 enum NavigationAction: Hashable {

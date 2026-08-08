@@ -50,6 +50,7 @@ struct RootView: View {
             NavigationStack {
                 routedView(for: route)
             }
+            .interactiveDismissDisabled(!route.allowsInteractiveDismissal)
         }
     }
 
