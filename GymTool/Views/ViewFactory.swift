@@ -10,21 +10,20 @@ final class ViewFactory {
         self.viewModelFactory = viewModelFactory
     }
 
-    // The home container and its two pages take their view models rather than
-    // making them. Those view models live for as long as the app does and are
-    // owned by `AppContext`; only the routed screens below get a view model
-    // minted per presentation.
-
-    func makeHomeContainerView(
-        viewModel: any HomeContainerViewModelProtocol
-    ) -> HomeContainerView {
-        HomeContainerView(viewModel: viewModel, viewFactory: self)
-    }
+    // The tab roots take their view model rather than making one. Those view
+    // models live for as long as the app does and are owned by `AppContext`;
+    // only the routed screens below get a view model minted per presentation.
 
     func makeWorkoutListView(
         viewModel: any WorkoutListViewModelProtocol
     ) -> WorkoutListView {
         WorkoutListView(viewModel: viewModel)
+    }
+
+    func makeExerciseListView(
+        viewModel: any ExerciseListViewModelProtocol
+    ) -> ExerciseListView {
+        ExerciseListView(viewModel: viewModel)
     }
 
     func makeHistoryListView(
@@ -38,8 +37,14 @@ final class ViewFactory {
     @ViewBuilder
     func view(for route: NavigationRoute) -> some View {
         switch route {
-        case .exerciseList:
-            ExerciseListView(viewModel: viewModelFactory.makeExerciseListViewModel())
+        case .workoutDetail(let workoutId):
+            WorkoutDetailView(viewModel: viewModelFactory.makeWorkoutDetailViewModel(workoutId: workoutId))
+
+        case .exerciseDetail(let exerciseId):
+            ExerciseDetailView(viewModel: viewModelFactory.makeExerciseDetailViewModel(exerciseId: exerciseId))
+
+        case .historyDetail(let entryId):
+            HistoryDetailView(viewModel: viewModelFactory.makeHistoryDetailViewModel(entryId: entryId))
 
         case .exerciseForm(let mode):
             ExerciseFormView(viewModel: viewModelFactory.makeExerciseFormViewModel(mode: mode))
@@ -49,9 +54,6 @@ final class ViewFactory {
 
         case .logWorkout(let workoutId):
             LogWorkoutView(viewModel: viewModelFactory.makeLogWorkoutViewModel(workoutId: workoutId))
-
-        case .historyDetail(let entryId):
-            HistoryDetailView(viewModel: viewModelFactory.makeHistoryDetailViewModel(entryId: entryId))
         }
     }
 }

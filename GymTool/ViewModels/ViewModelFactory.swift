@@ -17,17 +17,27 @@ final class ViewModelFactory {
         HomeContainerViewModel(childViewModelFactory: self)
     }
 
+    func makeWorkoutDetailViewModel(workoutId: String) -> any WorkoutDetailViewModelProtocol {
+        WorkoutDetailViewModel(
+            workoutId: workoutId,
+            workoutService: services.workoutService,
+            navigator: navigator
+        )
+    }
+
+    func makeExerciseDetailViewModel(exerciseId: String) -> any ExerciseDetailViewModelProtocol {
+        ExerciseDetailViewModel(
+            exerciseId: exerciseId,
+            exerciseService: services.exerciseService,
+            workoutEntryService: services.workoutEntryService,
+            navigator: navigator
+        )
+    }
+
     func makeHistoryDetailViewModel(entryId: String) -> any HistoryDetailViewModelProtocol {
         HistoryDetailViewModel(
             entryId: entryId,
             workoutEntryService: services.workoutEntryService
-        )
-    }
-
-    func makeExerciseListViewModel() -> any ExerciseListViewModelProtocol {
-        ExerciseListViewModel(
-            exerciseService: services.exerciseService,
-            navigator: navigator
         )
     }
 
@@ -65,6 +75,13 @@ extension ViewModelFactory: HomeContainerChildViewModelFactory {
     func makeWorkoutListViewModel() -> any WorkoutListViewModelProtocol {
         WorkoutListViewModel(
             workoutService: services.workoutService,
+            exerciseService: services.exerciseService,
+            navigator: navigator
+        )
+    }
+
+    func makeExerciseListViewModel() -> any ExerciseListViewModelProtocol {
+        ExerciseListViewModel(
             exerciseService: services.exerciseService,
             navigator: navigator
         )

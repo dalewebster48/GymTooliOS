@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Owns the one `NavigationStack` and the sheet chain. Everything the navigator
-/// records as state gets presented here and nowhere else.
+/// Owns the tab bar, one `NavigationStack` per tab, and the single sheet.
+/// Everything the navigator records as state gets presented here.
 struct RootView: View {
     @Bindable var navigator: AppNavigator
     let viewFactory: ViewFactory
@@ -9,30 +9,61 @@ struct RootView: View {
     let homeContainerViewModel: any HomeContainerViewModelProtocol
 
     var body: some View {
-        NavigationStack(path: $navigator.path) {
-            viewFactory.makeHomeContainerView(viewModel: homeContainerViewModel)
-                .navigationDestination(for: NavigationRoute.self) { route in
-                    routedView(for: route)
+        TabView(selection: $navigator.selectedTab) {
+            Tab(
+                AppTab.workouts.title,
+                systemImage: AppTab.workouts.systemImage,
+                value: AppTab.workouts
+            ) {
+                stack(for: .workouts) {
+                    viewFactory.makeWorkoutListView(
+                        viewModel: homeContainerViewModel.workoutListViewModel
+                    )
                 }
-        }
-        .sheet(isPresented: isPresented(level: 0)) {
-            sheetContent(level: 0)
-                // Level 1 is attached to level 0's content, because the app
-                // presents a sheet from a sheet (Workouts → Exercises →
-                // Exercise form). Two levels is the depth the app uses; a
-                // recursive presenter would not type-check.
-                .sheet(isPresented: isPresented(level: 1)) {
-                    sheetContent(level: 1)
-                }
-        }
-    }
+            }
 
-    @ViewBuilder
-    private func sheetContent(level: Int) -> some View {
-        if let route = navigator.modalStack[safe: level] {
+            Tab(
+                AppTab.exercises.title,
+                systemImage: AppTab.exercises.systemImage,
+                value: AppTab.exercises
+            ) {
+                stack(for: .exercises) {
+                    viewFactory.makeExerciseListView(
+                        viewModel: homeContainerViewModel.exerciseListViewModel
+                    )
+                }
+            }
+
+            Tab(
+                AppTab.insights.title,
+                systemImage: AppTab.insights.systemImage,
+                value: AppTab.insights
+            ) {
+                stack(for: .insights) {
+                    viewFactory.makeHistoryListView(
+                        viewModel: homeContainerViewModel.historyListViewModel
+                    )
+                }
+            }
+        }
+        .sheet(item: $navigator.modal) { route in
             NavigationStack {
                 routedView(for: route)
             }
+        }
+    }
+
+    /// Each tab keeps its own stack, so switching away and back returns you to
+    /// where you were rather than to the tab's root.
+    private func stack<Root: View>(
+        for tab: AppTab,
+        @ViewBuilder root: () -> Root
+    ) -> some View {
+        NavigationStack(path: navigator.path(for: tab)) {
+            root()
+                .navigationDestination(for: NavigationRoute.self) { route in
+                    routedView(for: route)
+                }
         }
     }
 
@@ -42,17 +73,5 @@ struct RootView: View {
     private func routedView(for route: NavigationRoute) -> some View {
         viewFactory.view(for: route)
             .id(route)
-    }
-
-    /// Dismissing a sheet by swipe unwinds the stack to that level, which is
-    /// what `AppNavigator.dismiss()` does programmatically.
-    private func isPresented(level: Int) -> Binding<Bool> {
-        Binding(
-            get: { navigator.modalStack.count > level },
-            set: { isPresented in
-                guard !isPresented, navigator.modalStack.count > level else { return }
-                navigator.modalStack.removeSubrange(level...)
-            }
-        )
     }
 }

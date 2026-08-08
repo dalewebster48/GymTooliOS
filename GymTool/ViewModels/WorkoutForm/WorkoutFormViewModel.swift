@@ -56,7 +56,7 @@ final class WorkoutFormViewModel: WorkoutFormViewModelProtocol {
     /// one testable place.
     var isConfirmingDelete = false
 
-    let emptyStateMessage = "You need at least one exercise before you can build a workout.\nClose this and tap Manage to create some."
+    let emptyStateMessage = "You need at least one exercise before you can build a workout.\nClose this and add some on the Exercises tab."
     let deleteButtonTitle = "Delete Workout"
     let deleteConfirmationTitle = "Delete this workout?"
     let deleteConfirmationMessage = "Sessions you've already logged from it are kept."

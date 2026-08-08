@@ -24,6 +24,52 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
         }
     }
 
+    /// Every set logged against one exercise, grouped back into the sessions
+    /// they were performed in. Ordered newest session first, and within a
+    /// session in the order the sets were performed.
+    func fetchRecordings(exerciseId: String) throws -> [ExerciseRecording] {
+        let query = EntrySetTable.table
+            .join(
+                WorkoutEntryTable.table,
+                on: WorkoutEntryTable.table[WorkoutEntryTable.id] == EntrySetTable.entryId
+            )
+            .filter(EntrySetTable.exerciseId == exerciseId)
+            .order(WorkoutEntryTable.performedAt.desc, EntrySetTable.position.asc)
+
+        // Rows arrive in the order we want, but a dictionary won't hold it, so
+        // the entry ids are tracked separately as they are first seen.
+        var entryIdOrder: [String] = []
+        var performedAtByEntry: [String: Date] = [:]
+        var setsByEntry: [String: [WorkoutSet]] = [:]
+
+        for row in try databaseProvider.connection.prepare(query) {
+            let entryId = row[EntrySetTable.entryId]
+
+            if setsByEntry[entryId] == nil {
+                entryIdOrder.append(entryId)
+                performedAtByEntry[entryId] = row[WorkoutEntryTable.performedAt]
+            }
+
+            setsByEntry[entryId, default: []].append(
+                WorkoutSet(
+                    // `id` is ambiguous across the joined tables.
+                    id: row[EntrySetTable.table[EntrySetTable.id]],
+                    reps: row[EntrySetTable.reps],
+                    weight: row[EntrySetTable.weight]
+                )
+            )
+        }
+
+        return entryIdOrder.compactMap { entryId in
+            guard let performedAt = performedAtByEntry[entryId] else { return nil }
+            return ExerciseRecording(
+                entryId: entryId,
+                performedAt: performedAt,
+                sets: setsByEntry[entryId] ?? []
+            )
+        }
+    }
+
     func delete(id: String) throws {
         // `entry_sets` cascades on `entry_id`, so the sets go with it.
         let row = WorkoutEntryTable.table.filter(WorkoutEntryTable.id == id)

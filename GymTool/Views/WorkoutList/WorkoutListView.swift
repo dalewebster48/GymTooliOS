@@ -15,14 +15,6 @@ struct WorkoutListView: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .swipeActions(edge: .trailing) {
-                    // Deliberately not destructive — deleting lives inside the
-                    // edit screen, behind a confirmation.
-                    Button("Edit") {
-                        viewModel.didSelectEditWorkout(id: workout.id)
-                    }
-                    .tint(Theme.primaryAccent)
-                }
             }
         }
         .listStyle(.insetGrouped)
@@ -35,6 +27,16 @@ struct WorkoutListView: View {
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Theme.secondaryText)
                     .padding()
+            }
+        }
+        .navigationTitle(viewModel.title)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    viewModel.didTapCreateWorkout()
+                } label: {
+                    Image(systemName: "plus")
+                }
             }
         }
         .onAppear { viewModel.onAppear() }

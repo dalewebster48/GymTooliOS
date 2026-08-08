@@ -11,9 +11,7 @@ protocol WorkoutListViewModelProtocol: AnyObject, Observable {
     func onAppear()
     func subtitle(for workout: Workout) -> String
     func didSelectWorkout(id: String)
-    func didSelectEditWorkout(id: String)
     func didTapCreateWorkout()
-    func didTapManageExercises()
 }
 
 @Observable
@@ -57,29 +55,12 @@ final class WorkoutListViewModel: WorkoutListViewModelProtocol {
     }
 
     func didSelectWorkout(id: String) {
-        guard let workout = workout(id: id) else { return }
-        navigator.navigate(.modal(.logWorkout(workoutId: workout.id)))
-    }
-
-    func didSelectEditWorkout(id: String) {
-        guard let workout = workout(id: id) else { return }
-        presentForm(mode: .edit(workout))
-    }
-
-    private func workout(id: String) -> Workout? {
-        workouts.first { $0.id == id }
+        guard workouts.contains(where: { $0.id == id }) else { return }
+        navigator.navigate(.push(.workoutDetail(workoutId: id)))
     }
 
     func didTapCreateWorkout() {
-        presentForm(mode: .create)
-    }
-
-    private func presentForm(mode: WorkoutFormMode) {
-        navigator.navigate(.modal(.workoutForm(mode: mode)))
-    }
-
-    func didTapManageExercises() {
-        navigator.navigate(.modal(.exerciseList))
+        navigator.navigate(.modal(.workoutForm(mode: .create)))
     }
 
     private func loadWorkouts() {

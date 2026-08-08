@@ -74,5 +74,11 @@ final class AppDatabaseProvider: DatabaseProvider {
                 delete: .cascade
             )
         })
+
+        // Exercise detail reads every set logged against one exercise, which is
+        // otherwise a full scan of `entry_sets`.
+        try connection.run(
+            EntrySetTable.table.createIndex(EntrySetTable.exerciseId, ifNotExists: true)
+        )
     }
 }

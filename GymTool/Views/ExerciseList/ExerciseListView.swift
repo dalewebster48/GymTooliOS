@@ -34,11 +34,7 @@ struct ExerciseListView: View {
             }
         }
         .navigationTitle(viewModel.title)
-        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button("Done") { viewModel.didTapDone() }
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     viewModel.didTapCreateExercise()

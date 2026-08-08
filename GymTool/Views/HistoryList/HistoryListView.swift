@@ -35,6 +35,7 @@ struct HistoryListView: View {
                     .padding()
             }
         }
+        .navigationTitle(viewModel.title)
         .confirmationDialog(
             viewModel.deleteConfirmationTitle,
             isPresented: .presented(viewModel.isConfirmingDelete, onDismiss: viewModel.didCancelDelete),

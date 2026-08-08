@@ -11,7 +11,6 @@ protocol ExerciseListViewModelProtocol: AnyObject, Observable {
     func onAppear()
     func didTapCreateExercise()
     func didSelectExercise(id: String)
-    func didTapDone()
 }
 
 @Observable
@@ -44,20 +43,12 @@ final class ExerciseListViewModel: ExerciseListViewModelProtocol {
     }
 
     func didTapCreateExercise() {
-        presentForm(mode: .create)
+        navigator.navigate(.modal(.exerciseForm(mode: .create)))
     }
 
     func didSelectExercise(id: String) {
-        guard let exercise = exercises.first(where: { $0.id == id }) else { return }
-        presentForm(mode: .edit(exercise))
-    }
-
-    private func presentForm(mode: ExerciseFormMode) {
-        navigator.navigate(.modal(.exerciseForm(mode: mode)))
-    }
-
-    func didTapDone() {
-        navigator.dismiss()
+        guard exercises.contains(where: { $0.id == id }) else { return }
+        navigator.navigate(.push(.exerciseDetail(exerciseId: id)))
     }
 
     private func loadExercises() {

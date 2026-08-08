@@ -8,6 +8,8 @@ protocol WorkoutEntryService: AnyObject {
     func logWorkout(workoutId: String, exerciseEntries: [ExerciseEntry], caloriesBurnt: Int?) throws
     func fetchHistory() throws -> [WorkoutHistoryItem]
     func fetchHistoryDetail(entryId: String) throws -> WorkoutHistoryDetail?
+    /// The most recent sessions this exercise was logged in, newest first.
+    func fetchRecentRecordings(exerciseId: String) throws -> [ExerciseRecording]
     func deleteEntry(id: String) throws
 
     func addConsumer(_ consumer: any WorkoutEntryServiceConsumer)
@@ -19,6 +21,8 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
     private static let deletedWorkoutName = "Deleted workout"
     /// Shown when logged sets outlive the exercise they were performed against.
     private static let deletedExerciseName = "Deleted exercise"
+    /// How many past sessions the exercise detail screen shows.
+    private static let recentRecordingLimit = 5
 
     private let workoutEntryRepository: any WorkoutEntryRepository
     private let workoutRepository: any WorkoutRepository
@@ -105,6 +109,13 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
                 )
             }
         )
+    }
+
+    func fetchRecentRecordings(exerciseId: String) throws -> [ExerciseRecording] {
+        // Limited here rather than in SQL: a LIMIT would cap the number of
+        // sets, and what's wanted is a number of sessions.
+        let recordings = try workoutEntryRepository.fetchRecordings(exerciseId: exerciseId)
+        return Array(recordings.prefix(Self.recentRecordingLimit))
     }
 
     func deleteEntry(id: String) throws {
