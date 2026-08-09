@@ -19,10 +19,18 @@ final class AppNavigator: Navigator {
     /// raised from a tab's stack, and none of them presents another.
     var modal: NavigationRoute?
 
+    /// The presented sheet's own push stack. Log Workout pushes into the sheet,
+    /// so those routes must not land on the tab's stack behind it.
+    var modalPath: [NavigationRoute] = []
+
     func navigate(_ action: NavigationAction) {
         switch action {
         case .push(let route):
-            paths[selectedTab, default: []].append(route)
+            if modal == nil {
+                paths[selectedTab, default: []].append(route)
+            } else {
+                modalPath.append(route)
+            }
 
         case .modal(let route):
             modal = route
@@ -30,6 +38,10 @@ final class AppNavigator: Navigator {
     }
 
     func pop() {
+        guard modal == nil else {
+            if !modalPath.isEmpty { modalPath.removeLast() }
+            return
+        }
         guard var path = paths[selectedTab], !path.isEmpty else { return }
         path.removeLast()
         paths[selectedTab] = path
@@ -37,6 +49,7 @@ final class AppNavigator: Navigator {
 
     func dismiss(completion: (() -> Void)?) {
         modal = nil
+        modalPath = []
         completion?()
     }
 

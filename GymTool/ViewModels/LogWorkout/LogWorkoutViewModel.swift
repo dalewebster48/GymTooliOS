@@ -1,130 +1,135 @@
 import Foundation
 import Observation
 
-/// Vends the per-exercise child view models for the logging screen. Declared
-/// here and conformed by `ViewModelFactory` so the parent view model never
-/// constructs a child itself.
-@MainActor
-protocol LogWorkoutExerciseViewModelFactory: AnyObject {
-    func makeLogWorkoutExerciseViewModel(exercise: Exercise) -> any LogWorkoutExerciseViewModelProtocol
-}
-
 @MainActor
 protocol LogWorkoutViewModelProtocol: AnyObject, Observable {
     var title: String { get }
-    var exerciseViewModels: [any LogWorkoutExerciseViewModelProtocol] { get }
+    var exercises: [SessionExercise] { get }
+    var caloriesText: String { get }
     var canSubmit: Bool { get }
     var errorMessage: String? { get }
-    var caloriesText: String { get }
+    var exercisesSectionTitle: String { get }
+    var discardButtonTitle: String { get }
+    var discardConfirmationTitle: String { get }
+    var discardConfirmationMessage: String { get }
+    var isConfirmingDiscard: Bool { get }
 
     func onAppear()
-    func didTapAddSet(exerciseId: String)
+    func progressText(for exercise: SessionExercise) -> String
+    func didSelectExercise(id: String)
     func didUpdateCalories(_ text: String)
-    func didUpdateReps(_ text: String, setId: String, exerciseId: String)
-    func didUpdateWeight(_ text: String, setId: String, exerciseId: String)
-    func didDeleteSet(setId: String, exerciseId: String)
     func didTapSubmit()
     func didTapCancel()
+    func didTapDiscard()
+    func didConfirmDiscard()
+    func didCancelDiscard()
 }
 
 @Observable
 @MainActor
 final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
     @ObservationIgnored private let workoutId: String
-    @ObservationIgnored private let workoutService: any WorkoutService
-    @ObservationIgnored private let workoutEntryService: any WorkoutEntryService
-    @ObservationIgnored private let exerciseViewModelFactory: any LogWorkoutExerciseViewModelFactory
+    @ObservationIgnored private let workoutSessionService: any WorkoutSessionService
     @ObservationIgnored private let navigator: any Navigator
 
     var title = "Log Workout"
-    var exerciseViewModels: [any LogWorkoutExerciseViewModelProtocol] = []
-    var errorMessage: String?
+    var exercises: [SessionExercise] = []
     var caloriesText = ""
+    var errorMessage: String?
+    var isConfirmingDiscard = false
 
-    /// Optional, and deliberately not part of `canSubmit` — a session is worth
-    /// recording whether or not you bothered to enter calories.
-    @ObservationIgnored private var caloriesBurnt: Int?
+    let exercisesSectionTitle = "EXERCISES"
+    let discardButtonTitle = "Discard Session"
+    let discardConfirmationTitle = "Discard this session?"
+    let discardConfirmationMessage = "Everything you've recorded so far will be lost."
 
     var canSubmit: Bool {
-        exerciseViewModels.contains { $0.makeExerciseEntry() != nil }
+        exercises.contains { !$0.completedSets.isEmpty }
     }
 
     init(
         workoutId: String,
-        workoutService: any WorkoutService,
-        workoutEntryService: any WorkoutEntryService,
-        exerciseViewModelFactory: any LogWorkoutExerciseViewModelFactory,
+        workoutSessionService: any WorkoutSessionService,
         navigator: any Navigator
     ) {
         self.workoutId = workoutId
-        self.workoutService = workoutService
-        self.workoutEntryService = workoutEntryService
-        self.exerciseViewModelFactory = exerciseViewModelFactory
+        self.workoutSessionService = workoutSessionService
         self.navigator = navigator
+
+        // Sets are recorded on a pushed screen, so this list follows the
+        // session rather than owning it.
+        workoutSessionService.addConsumer(self)
     }
 
     func onAppear() {
-        guard exerciseViewModels.isEmpty else { return }
-        loadWorkout()
+        do {
+            // Resumes when a session for this workout is already in progress.
+            try workoutSessionService.startSession(workoutId: workoutId)
+        } catch {
+            errorMessage = "Couldn't start this workout. \(error.localizedDescription)"
+        }
+        readSession()
     }
 
-    func didTapAddSet(exerciseId: String) {
-        exercise(id: exerciseId)?.addSet()
+    func progressText(for exercise: SessionExercise) -> String {
+        let count = exercise.completedSets.count
+        switch count {
+        case 0: return "Not logged yet"
+        case 1: return "1 set"
+        default: return "\(count) sets"
+        }
+    }
+
+    func didSelectExercise(id: String) {
+        guard exercises.contains(where: { $0.exerciseId == id }) else { return }
+        navigator.navigate(.push(.recordExercise(exerciseId: id)))
     }
 
     func didUpdateCalories(_ text: String) {
-        caloriesText = text
-        caloriesBurnt = Int(text.trimmed)
-    }
-
-    func didUpdateReps(_ text: String, setId: String, exerciseId: String) {
-        exercise(id: exerciseId)?.updateReps(text, setId: setId)
-    }
-
-    func didUpdateWeight(_ text: String, setId: String, exerciseId: String) {
-        exercise(id: exerciseId)?.updateWeight(text, setId: setId)
-    }
-
-    func didDeleteSet(setId: String, exerciseId: String) {
-        exercise(id: exerciseId)?.removeSet(id: setId)
-    }
-
-    private func exercise(id: String) -> (any LogWorkoutExerciseViewModelProtocol)? {
-        exerciseViewModels.first { $0.exerciseId == id }
+        workoutSessionService.updateCalories(text)
     }
 
     func didTapSubmit() {
-        let entries = exerciseViewModels.compactMap { $0.makeExerciseEntry() }
-        guard !entries.isEmpty else { return }
-
         do {
-            try workoutEntryService.logWorkout(
-                workoutId: workoutId,
-                exerciseEntries: entries,
-                caloriesBurnt: caloriesBurnt
-            )
+            try workoutSessionService.submit()
             navigator.dismiss()
         } catch {
             errorMessage = "Couldn't save this workout. \(error.localizedDescription)"
         }
     }
 
+    /// Closing keeps the session — it stays resumable from Insights. Discard is
+    /// the deliberate way to throw it away.
     func didTapCancel() {
         navigator.dismiss()
     }
 
-    private func loadWorkout() {
-        do {
-            guard let workout = try workoutService.fetchWorkout(id: workoutId) else {
-                errorMessage = "That workout no longer exists."
-                return
-            }
-            title = workout.name
-            exerciseViewModels = workout.exercises.map {
-                exerciseViewModelFactory.makeLogWorkoutExerciseViewModel(exercise: $0)
-            }
-        } catch {
-            errorMessage = "Couldn't load this workout. \(error.localizedDescription)"
-        }
+    func didTapDiscard() {
+        isConfirmingDiscard = true
+    }
+
+    func didCancelDiscard() {
+        isConfirmingDiscard = false
+    }
+
+    func didConfirmDiscard() {
+        isConfirmingDiscard = false
+        workoutSessionService.discard()
+        navigator.dismiss()
+    }
+
+    private func readSession() {
+        guard let session = workoutSessionService.currentSession else { return }
+        title = session.workoutName
+        exercises = session.exercises
+        caloriesText = session.caloriesText
+    }
+}
+
+// MARK: - WorkoutSessionConsumer
+
+extension LogWorkoutViewModel: WorkoutSessionConsumer {
+    nonisolated func sessionDidChange(workoutSessionService: any WorkoutSessionService) {
+        Task { @MainActor in readSession() }
     }
 }

@@ -12,8 +12,18 @@ struct LogWorkoutView: View {
 
     var body: some View {
         List {
-            ForEach(viewModel.exerciseViewModels, id: \.exerciseId) { exerciseViewModel in
-                exerciseSection(exerciseViewModel)
+            Section(viewModel.exercisesSectionTitle) {
+                ForEach(viewModel.exercises) { exercise in
+                    Button {
+                        viewModel.didSelectExercise(id: exercise.exerciseId)
+                    } label: {
+                        ExerciseRow(
+                            name: exercise.name,
+                            details: viewModel.progressText(for: exercise)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
             }
 
             Section {
@@ -29,6 +39,13 @@ struct LogWorkoutView: View {
                         .foregroundStyle(Theme.destructive)
                 }
             }
+
+            Section {
+                Button(viewModel.discardButtonTitle, role: .destructive) {
+                    viewModel.didTapDiscard()
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
@@ -38,7 +55,7 @@ struct LogWorkoutView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button("Cancel") { viewModel.didTapCancel() }
+                Button("Close") { viewModel.didTapCancel() }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Submit") { viewModel.didTapSubmit() }
@@ -46,48 +63,16 @@ struct LogWorkoutView: View {
                     .fontWeight(.semibold)
             }
         }
-        .onAppear { viewModel.onAppear() }
-    }
-
-    @ViewBuilder
-    private func exerciseSection(
-        _ exerciseViewModel: any LogWorkoutExerciseViewModelProtocol
-    ) -> some View {
-        let exerciseId = exerciseViewModel.exerciseId
-
-        Section {
-            ForEach(exerciseViewModel.sets) { set in
-                SetInputRow(
-                    setNumber: exerciseViewModel.setNumber(forSetId: set.id),
-                    reps: .action(
-                        exerciseViewModel.repsText(forSetId: set.id),
-                        { viewModel.didUpdateReps($0, setId: set.id, exerciseId: exerciseId) }
-                    ),
-                    weight: .action(
-                        exerciseViewModel.weightText(forSetId: set.id),
-                        { viewModel.didUpdateWeight($0, setId: set.id, exerciseId: exerciseId) }
-                    )
-                )
-                .deleteDisabled(!exerciseViewModel.canRemoveSet)
-            }
-            .onDelete { offsets in
-                let ids = offsets.map { exerciseViewModel.sets[$0].id }
-                for id in ids {
-                    viewModel.didDeleteSet(setId: id, exerciseId: exerciseId)
-                }
-            }
-        } header: {
-            Text(exerciseViewModel.exerciseName)
-        } footer: {
-            Button {
-                viewModel.didTapAddSet(exerciseId: exerciseId)
-            } label: {
-                Label("Add Set", systemImage: "plus.circle.fill")
-                    .font(.subheadline)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Theme.primaryAccent)
-            .padding(.vertical, 8)
+        .confirmationDialog(
+            viewModel.discardConfirmationTitle,
+            isPresented: .presented(viewModel.isConfirmingDiscard, onDismiss: viewModel.didCancelDiscard),
+            titleVisibility: .visible
+        ) {
+            Button("Discard", role: .destructive) { viewModel.didConfirmDiscard() }
+            Button("Cancel", role: .cancel) { viewModel.didCancelDiscard() }
+        } message: {
+            Text(viewModel.discardConfirmationMessage)
         }
+        .onAppear { viewModel.onAppear() }
     }
 }

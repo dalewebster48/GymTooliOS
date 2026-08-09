@@ -47,8 +47,11 @@ struct RootView: View {
             }
         }
         .sheet(item: $navigator.modal) { route in
-            NavigationStack {
+            NavigationStack(path: $navigator.modalPath) {
                 routedView(for: route)
+                    .navigationDestination(for: NavigationRoute.self) { pushed in
+                        routedView(for: pushed)
+                    }
             }
             .interactiveDismissDisabled(!route.allowsInteractiveDismissal)
         }

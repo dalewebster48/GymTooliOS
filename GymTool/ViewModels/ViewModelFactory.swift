@@ -61,10 +61,16 @@ final class ViewModelFactory {
     func makeLogWorkoutViewModel(workoutId: String) -> any LogWorkoutViewModelProtocol {
         LogWorkoutViewModel(
             workoutId: workoutId,
-            workoutService: services.workoutService,
-            workoutEntryService: services.workoutEntryService,
-            exerciseViewModelFactory: self,
+            workoutSessionService: services.workoutSessionService,
             navigator: navigator
+        )
+    }
+
+    func makeRecordExerciseViewModel(exerciseId: String) -> any RecordExerciseViewModelProtocol {
+        RecordExerciseViewModel(
+            exerciseId: exerciseId,
+            workoutSessionService: services.workoutSessionService,
+            workoutEntryService: services.workoutEntryService
         )
     }
 }
@@ -90,15 +96,8 @@ extension ViewModelFactory: HomeContainerChildViewModelFactory {
     func makeHistoryListViewModel() -> any HistoryListViewModelProtocol {
         HistoryListViewModel(
             workoutEntryService: services.workoutEntryService,
+            workoutSessionService: services.workoutSessionService,
             navigator: navigator
         )
-    }
-}
-
-// MARK: - LogWorkoutExerciseViewModelFactory
-
-extension ViewModelFactory: LogWorkoutExerciseViewModelFactory {
-    func makeLogWorkoutExerciseViewModel(exercise: Exercise) -> any LogWorkoutExerciseViewModelProtocol {
-        LogWorkoutExerciseViewModel(exercise: exercise)
     }
 }

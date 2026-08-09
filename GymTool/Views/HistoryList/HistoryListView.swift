@@ -5,6 +5,22 @@ struct HistoryListView: View {
 
     var body: some View {
         List {
+            if let session = viewModel.resumableSession {
+                Section {
+                    Button {
+                        viewModel.didTapResumeSession()
+                    } label: {
+                        WorkoutRow(
+                            name: session.workoutName,
+                            subtitle: viewModel.resumeSubtitle
+                        )
+                    }
+                    .buttonStyle(.plain)
+                } header: {
+                    Text(viewModel.resumeSectionTitle)
+                }
+            }
+
             ForEach(viewModel.items) { item in
                 Button {
                     viewModel.didSelectItem(id: item.entryId)

@@ -29,6 +29,7 @@ enum NavigationRoute: Hashable, Identifiable {
     case workoutForm(mode: WorkoutFormMode)
     case exerciseForm(mode: ExerciseFormMode)
     case logWorkout(workoutId: String)
+    case recordExercise(exerciseId: String)
 
     /// For `.sheet(item:)`. A route fully describes its screen, so it is its
     /// own identity.
@@ -41,7 +42,7 @@ enum NavigationRoute: Hashable, Identifiable {
         switch self {
         case .logWorkout, .workoutForm, .exerciseForm:
             false
-        case .workoutDetail, .exerciseDetail, .historyDetail:
+        case .workoutDetail, .exerciseDetail, .historyDetail, .recordExercise:
             true
         }
     }

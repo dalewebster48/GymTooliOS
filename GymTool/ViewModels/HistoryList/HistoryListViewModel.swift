@@ -10,8 +10,13 @@ protocol HistoryListViewModelProtocol: AnyObject, Observable {
     var deleteConfirmationTitle: String { get }
     var deleteConfirmationMessage: String { get }
     var isConfirmingDelete: Bool { get }
+    /// A workout left part-way through, offered at the top of the list.
+    var resumableSession: WorkoutSession? { get }
+    var resumeSectionTitle: String { get }
+    var resumeSubtitle: String { get }
 
     func onAppear()
+    func didTapResumeSession()
     func subtitle(for item: WorkoutHistoryItem) -> String
     func detailText(for item: WorkoutHistoryItem) -> String
     func reload()
@@ -25,14 +30,22 @@ protocol HistoryListViewModelProtocol: AnyObject, Observable {
 @MainActor
 final class HistoryListViewModel: HistoryListViewModelProtocol {
     @ObservationIgnored private let workoutEntryService: any WorkoutEntryService
+    @ObservationIgnored private let workoutSessionService: any WorkoutSessionService
     @ObservationIgnored private let navigator: any Navigator
 
     let title = "History"
+    let resumeSectionTitle = "IN PROGRESS"
     let deleteConfirmationTitle = "Delete this session?"
     let deleteConfirmationMessage = "The sets you recorded will be removed. This can't be undone."
 
     var items: [WorkoutHistoryItem] = []
     var emptyStateMessage = ""
+    var resumableSession: WorkoutSession?
+
+    var resumeSubtitle: String {
+        guard let resumableSession else { return "" }
+        return "Started \(resumableSession.startedAt.historyFormatted)"
+    }
 
     /// The entry a delete has been requested for. The view only asks whether a
     /// confirmation is showing; which entry it applies to stays in here. Held
@@ -49,18 +62,32 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
 
     init(
         workoutEntryService: any WorkoutEntryService,
+        workoutSessionService: any WorkoutSessionService,
         navigator: any Navigator
     ) {
         self.workoutEntryService = workoutEntryService
+        self.workoutSessionService = workoutSessionService
         self.navigator = navigator
 
         // A session logged from the Workouts tab has to appear here without the
         // view needing an appearance hook to notice.
         workoutEntryService.addConsumer(self)
+        workoutSessionService.addConsumer(self)
     }
 
     func onAppear() {
         reload()
+        readSession()
+    }
+
+    /// Reopens the logging sheet, which resumes rather than restarts.
+    func didTapResumeSession() {
+        guard let resumableSession else { return }
+        navigator.navigate(.modal(.logWorkout(workoutId: resumableSession.workoutId)))
+    }
+
+    private func readSession() {
+        resumableSession = workoutSessionService.currentSession
     }
 
     func subtitle(for item: WorkoutHistoryItem) -> String {
@@ -118,5 +145,13 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
 extension HistoryListViewModel: WorkoutEntryServiceConsumer {
     nonisolated func entriesDidChange(workoutEntryService: any WorkoutEntryService) {
         Task { @MainActor in reload() }
+    }
+}
+
+// MARK: - WorkoutSessionConsumer
+
+extension HistoryListViewModel: WorkoutSessionConsumer {
+    nonisolated func sessionDidChange(workoutSessionService: any WorkoutSessionService) {
+        Task { @MainActor in readSession() }
     }
 }

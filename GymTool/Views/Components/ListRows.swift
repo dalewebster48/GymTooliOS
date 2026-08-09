@@ -17,6 +17,8 @@ struct WorkoutRow: View {
                 .foregroundStyle(Theme.secondaryText)
         }
         .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -36,6 +38,8 @@ struct ExerciseRow: View {
             }
         }
         .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -57,6 +61,8 @@ struct HistoryEntryRow: View {
                 .foregroundStyle(Theme.secondaryText)
         }
         .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -109,5 +115,7 @@ struct ExerciseSelectionRow: View {
             }
         }
         .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }

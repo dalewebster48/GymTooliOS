@@ -54,6 +54,9 @@ final class ViewFactory {
 
         case .logWorkout(let workoutId):
             LogWorkoutView(viewModel: viewModelFactory.makeLogWorkoutViewModel(workoutId: workoutId))
+
+        case .recordExercise(let exerciseId):
+            RecordExerciseView(viewModel: viewModelFactory.makeRecordExerciseViewModel(exerciseId: exerciseId))
         }
     }
 }

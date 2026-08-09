@@ -4,6 +4,7 @@ final class ServicesContainer {
     let exerciseService: any ExerciseService
     let workoutService: any WorkoutService
     let workoutEntryService: any WorkoutEntryService
+    let workoutSessionService: any WorkoutSessionService
 
     init(dataAccess: any DataAccessContainer) {
         exerciseService = ExerciseServiceImpl(
@@ -12,10 +13,19 @@ final class ServicesContainer {
         workoutService = WorkoutServiceImpl(
             workoutRepository: dataAccess.workoutRepository
         )
-        workoutEntryService = WorkoutEntryServiceImpl(
+        let workoutEntryService = WorkoutEntryServiceImpl(
             workoutEntryRepository: dataAccess.workoutEntryRepository,
             workoutRepository: dataAccess.workoutRepository,
             exerciseRepository: dataAccess.exerciseRepository
+        )
+        self.workoutEntryService = workoutEntryService
+
+        // The one service that depends on another: submitting has to log the
+        // session and clear it, and those must not come apart.
+        workoutSessionService = WorkoutSessionServiceImpl(
+            workoutSessionRepository: dataAccess.workoutSessionRepository,
+            workoutService: workoutService,
+            workoutEntryService: workoutEntryService
         )
     }
 }

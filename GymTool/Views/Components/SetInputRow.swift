@@ -4,8 +4,8 @@ import SwiftUI
 /// reusable leaf — the screen builds those bindings from view model actions.
 struct SetInputRow: View {
     let setNumber: Int
-    @Binding var reps: String
     @Binding var weight: String
+    @Binding var reps: String
 
     var body: some View {
         HStack(spacing: 12) {
@@ -14,13 +14,13 @@ struct SetInputRow: View {
                 .foregroundStyle(Theme.secondaryText)
                 .frame(width: 56, alignment: .leading)
 
-            numberField(placeholder: "0", text: $reps, keyboard: .numberPad)
-            Text("reps")
+            numberField(placeholder: "0", text: $weight, keyboard: .decimalPad)
+            Text("kg")
                 .font(.footnote)
                 .foregroundStyle(Theme.secondaryText)
 
-            numberField(placeholder: "0", text: $weight, keyboard: .decimalPad)
-            Text("kg")
+            numberField(placeholder: "0", text: $reps, keyboard: .numberPad)
+            Text("reps")
                 .font(.footnote)
                 .foregroundStyle(Theme.secondaryText)
         }
