@@ -19,7 +19,8 @@ struct LogWorkoutView: View {
                     } label: {
                         ExerciseRow(
                             name: exercise.name,
-                            details: viewModel.progressText(for: exercise)
+                            details: viewModel.progressText(for: exercise),
+                            isComplete: viewModel.isLogged(exercise)
                         )
                     }
                     .buttonStyle(.plain)

@@ -25,16 +25,31 @@ struct WorkoutRow: View {
 struct ExerciseRow: View {
     let name: String
     let details: String
+    /// Shows a trailing tick. Defaulted off, so rows that have no notion of
+    /// being "done" don't have to say so.
+    var isComplete: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(name)
-                .font(.headline)
-                .foregroundStyle(Theme.primaryText)
-            if !details.isEmpty {
-                Text(details)
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.secondaryText)
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(name)
+                    .font(.headline)
+                    .foregroundStyle(Theme.primaryText)
+                if !details.isEmpty {
+                    Text(details)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.secondaryText)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if isComplete {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(Theme.secondaryAccent)
+                    // The subtitle already says how many sets were logged, so
+                    // this is decoration rather than new information.
+                    .accessibilityHidden(true)
             }
         }
         .padding(.vertical, 2)

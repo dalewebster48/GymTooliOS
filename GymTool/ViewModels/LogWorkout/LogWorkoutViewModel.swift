@@ -16,6 +16,8 @@ protocol LogWorkoutViewModelProtocol: AnyObject, Observable {
 
     func onAppear()
     func progressText(for exercise: SessionExercise) -> String
+    /// Whether anything usable has been recorded against this exercise today.
+    func isLogged(_ exercise: SessionExercise) -> Bool
     func didSelectExercise(id: String)
     func didUpdateCalories(_ text: String)
     func didTapSubmit()
@@ -78,6 +80,10 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
         case 1: return "1 set"
         default: return "\(count) sets"
         }
+    }
+
+    func isLogged(_ exercise: SessionExercise) -> Bool {
+        !exercise.completedSets.isEmpty
     }
 
     func didSelectExercise(id: String) {
