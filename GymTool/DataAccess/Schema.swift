@@ -30,8 +30,21 @@ enum WorkoutEntryTable {
     static let id = SQLite.Expression<String>("id")
     static let workoutId = SQLite.Expression<String>("workout_id")
     static let performedAt = SQLite.Expression<Date>("performed_at")
-    /// Optional — logging a session without entering calories is allowed.
+    /// Written by the Apple Health sync rather than entered by hand.
     static let caloriesBurnt = SQLite.Expression<Int?>("calories_burnt")
+
+    // Added in schema version 1. Optional because `addColumn` on an existing
+    // table can't back-fill from another column, and rows logged before the
+    // sync existed have nothing meaningful to put here.
+
+    /// When the session was started, as opposed to when it was submitted. This
+    /// is the anchor for the Health workout search window.
+    static let startedAt = SQLite.Expression<Date?>("started_at")
+    /// The `HKWorkout` UUID. Non-nil means this session has been linked.
+    static let healthWorkoutId = SQLite.Expression<String?>("health_workout_id")
+    static let averageHeartRate = SQLite.Expression<Double?>("average_heart_rate")
+    /// Seconds, from the linked Health workout.
+    static let duration = SQLite.Expression<Double?>("duration")
 }
 
 enum EntrySetTable {

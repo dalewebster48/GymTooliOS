@@ -4,5 +4,7 @@
 <dict>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>GymTool reads the workout you recorded on your Apple Watch so it can show the calories, average heart rate and duration alongside the sets you logged.</string>
 </dict>
 </plist>

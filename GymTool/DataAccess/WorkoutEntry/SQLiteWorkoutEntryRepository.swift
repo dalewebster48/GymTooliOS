@@ -19,7 +19,11 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
                 workoutId: row[WorkoutEntryTable.workoutId],
                 performedAt: row[WorkoutEntryTable.performedAt],
                 caloriesBurnt: row[WorkoutEntryTable.caloriesBurnt],
-                exerciseEntries: entriesByWorkout[id] ?? []
+                exerciseEntries: entriesByWorkout[id] ?? [],
+                startedAt: row[WorkoutEntryTable.startedAt],
+                healthWorkoutId: row[WorkoutEntryTable.healthWorkoutId],
+                averageHeartRate: row[WorkoutEntryTable.averageHeartRate],
+                duration: row[WorkoutEntryTable.duration]
             )
         }
     }
@@ -70,6 +74,24 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
         }
     }
 
+    func linkHealthWorkout(
+        entryId: String,
+        healthWorkoutId: String,
+        caloriesBurnt: Int?,
+        averageHeartRate: Double?,
+        duration: TimeInterval?
+    ) throws {
+        let row = WorkoutEntryTable.table.filter(WorkoutEntryTable.id == entryId)
+        try databaseProvider.connection.run(
+            row.update(
+                WorkoutEntryTable.healthWorkoutId <- healthWorkoutId,
+                WorkoutEntryTable.caloriesBurnt <- caloriesBurnt,
+                WorkoutEntryTable.averageHeartRate <- averageHeartRate,
+                WorkoutEntryTable.duration <- duration
+            )
+        )
+    }
+
     func delete(id: String) throws {
         // `entry_sets` cascades on `entry_id`, so the sets go with it.
         let row = WorkoutEntryTable.table.filter(WorkoutEntryTable.id == id)
@@ -85,7 +107,11 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
                     WorkoutEntryTable.id <- entry.id,
                     WorkoutEntryTable.workoutId <- entry.workoutId,
                     WorkoutEntryTable.performedAt <- entry.performedAt,
-                    WorkoutEntryTable.caloriesBurnt <- entry.caloriesBurnt
+                    WorkoutEntryTable.caloriesBurnt <- entry.caloriesBurnt,
+                    WorkoutEntryTable.startedAt <- entry.startedAt,
+                    WorkoutEntryTable.healthWorkoutId <- entry.healthWorkoutId,
+                    WorkoutEntryTable.averageHeartRate <- entry.averageHeartRate,
+                    WorkoutEntryTable.duration <- entry.duration
                 )
             )
 

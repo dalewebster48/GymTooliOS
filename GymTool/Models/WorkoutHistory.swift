@@ -13,6 +13,9 @@ struct WorkoutHistoryItem: Identifiable, Hashable {
     let exerciseCount: Int
     let setCount: Int
     let caloriesBurnt: Int?
+    let healthWorkoutId: String?
+
+    var isLinked: Bool { healthWorkoutId != nil }
 }
 
 struct WorkoutHistoryDetail: Identifiable, Hashable {
@@ -23,6 +26,17 @@ struct WorkoutHistoryDetail: Identifiable, Hashable {
     let performedAt: Date
     let caloriesBurnt: Int?
     let exercises: [LoggedExercise]
+
+    /// Anchors the Apple Health search window. Falls back to `performedAt` for
+    /// sessions logged before this was captured.
+    let startedAt: Date?
+    let healthWorkoutId: String?
+    let averageHeartRate: Double?
+    let duration: TimeInterval?
+
+    var isLinked: Bool { healthWorkoutId != nil }
+
+    var healthSearchAnchor: Date { startedAt ?? performedAt }
 }
 
 struct LoggedExercise: Identifiable, Hashable {

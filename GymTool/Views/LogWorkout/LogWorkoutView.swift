@@ -27,12 +27,6 @@ struct LogWorkoutView: View {
                 }
             }
 
-            Section {
-                SessionSummaryView(
-                    calories: .action(viewModel.caloriesText, viewModel.didUpdateCalories)
-                )
-            }
-
             if let errorMessage = viewModel.errorMessage {
                 Section {
                     Text(errorMessage)

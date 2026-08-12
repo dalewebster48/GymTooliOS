@@ -5,6 +5,7 @@ final class ServicesContainer {
     let workoutService: any WorkoutService
     let workoutEntryService: any WorkoutEntryService
     let workoutSessionService: any WorkoutSessionService
+    let healthService: any HealthService
 
     init(dataAccess: any DataAccessContainer) {
         exerciseService = ExerciseServiceImpl(
@@ -26,6 +27,9 @@ final class ServicesContainer {
             workoutSessionRepository: dataAccess.workoutSessionRepository,
             workoutService: workoutService,
             workoutEntryService: workoutEntryService
+        )
+        healthService = HealthServiceImpl(
+            healthRepository: dataAccess.healthRepository
         )
     }
 }

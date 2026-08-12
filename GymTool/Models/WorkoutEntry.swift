@@ -6,6 +6,18 @@ struct WorkoutEntry: Identifiable, Codable, Hashable {
     let performedAt: Date
     let caloriesBurnt: Int?
     let exerciseEntries: [ExerciseEntry]
+
+    /// When recording began, as opposed to when it was submitted. Nil for
+    /// sessions logged before this was captured.
+    let startedAt: Date?
+    /// The `HKWorkout` this session was matched to.
+    let healthWorkoutId: String?
+    let averageHeartRate: Double?
+    let duration: TimeInterval?
+
+    /// Linked state is the presence of the id — there is no separate flag to
+    /// fall out of step with it.
+    var isLinked: Bool { healthWorkoutId != nil }
 }
 
 /// The sets performed against a single exercise within a `WorkoutEntry`.

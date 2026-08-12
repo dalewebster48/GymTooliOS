@@ -40,30 +40,3 @@ struct SetInputRow: View {
             .background(Theme.fieldBackground, in: RoundedRectangle(cornerRadius: 8))
     }
 }
-
-/// The calories field that sits under the logged sets.
-struct SessionSummaryView: View {
-    @Binding var calories: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Text("CALORIES BURNT")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.secondaryText)
-
-            Spacer()
-
-            TextField("0", text: $calories)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 72)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                .background(Theme.fieldBackground, in: RoundedRectangle(cornerRadius: 8))
-
-            Text("kcal")
-                .font(.footnote)
-                .foregroundStyle(Theme.secondaryText)
-        }
-    }
-}

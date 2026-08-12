@@ -5,7 +5,6 @@ import Observation
 protocol LogWorkoutViewModelProtocol: AnyObject, Observable {
     var title: String { get }
     var exercises: [SessionExercise] { get }
-    var caloriesText: String { get }
     var canSubmit: Bool { get }
     var errorMessage: String? { get }
     var exercisesSectionTitle: String { get }
@@ -19,7 +18,6 @@ protocol LogWorkoutViewModelProtocol: AnyObject, Observable {
     /// Whether anything usable has been recorded against this exercise today.
     func isLogged(_ exercise: SessionExercise) -> Bool
     func didSelectExercise(id: String)
-    func didUpdateCalories(_ text: String)
     func didTapSubmit()
     func didTapCancel()
     func didTapDiscard()
@@ -36,7 +34,6 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
 
     var title = "Log Workout"
     var exercises: [SessionExercise] = []
-    var caloriesText = ""
     var errorMessage: String?
     var isConfirmingDiscard = false
 
@@ -91,10 +88,6 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
         navigator.navigate(.push(.recordExercise(exerciseId: id)))
     }
 
-    func didUpdateCalories(_ text: String) {
-        workoutSessionService.updateCalories(text)
-    }
-
     func didTapSubmit() {
         do {
             try workoutSessionService.submit()
@@ -128,7 +121,6 @@ final class LogWorkoutViewModel: LogWorkoutViewModelProtocol {
         guard let session = workoutSessionService.currentSession else { return }
         title = session.workoutName
         exercises = session.exercises
-        caloriesText = session.caloriesText
     }
 }
 

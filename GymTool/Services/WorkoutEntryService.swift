@@ -5,9 +5,11 @@ protocol WorkoutEntryServiceConsumer: AnyObject {
 }
 
 protocol WorkoutEntryService: AnyObject {
-    func logWorkout(workoutId: String, exerciseEntries: [ExerciseEntry], caloriesBurnt: Int?) throws
+    func logWorkout(workoutId: String, startedAt: Date, exerciseEntries: [ExerciseEntry]) throws
     func fetchHistory() throws -> [WorkoutHistoryItem]
     func fetchHistoryDetail(entryId: String) throws -> WorkoutHistoryDetail?
+    /// Records the Apple Health workout this session matched, with its metrics.
+    func linkHealthWorkout(entryId: String, healthWorkout: HealthWorkout) throws
     /// The most recent sessions this exercise was logged in, newest first.
     func fetchRecentRecordings(exerciseId: String) throws -> [ExerciseRecording]
     func deleteEntry(id: String) throws
@@ -45,17 +47,33 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
 
     func logWorkout(
         workoutId: String,
-        exerciseEntries: [ExerciseEntry],
-        caloriesBurnt: Int?
+        startedAt: Date,
+        exerciseEntries: [ExerciseEntry]
     ) throws {
         let entry = WorkoutEntry(
             id: UUID().uuidString,
             workoutId: workoutId,
             performedAt: Date(),
-            caloriesBurnt: caloriesBurnt,
-            exerciseEntries: exerciseEntries
+            // Filled in by the Apple Health sync, not by hand.
+            caloriesBurnt: nil,
+            exerciseEntries: exerciseEntries,
+            startedAt: startedAt,
+            healthWorkoutId: nil,
+            averageHeartRate: nil,
+            duration: nil
         )
         try workoutEntryRepository.insert(entry)
+        notifyConsumers()
+    }
+
+    func linkHealthWorkout(entryId: String, healthWorkout: HealthWorkout) throws {
+        try workoutEntryRepository.linkHealthWorkout(
+            entryId: entryId,
+            healthWorkoutId: healthWorkout.id.uuidString,
+            caloriesBurnt: healthWorkout.activeEnergyBurned,
+            averageHeartRate: healthWorkout.averageHeartRate,
+            duration: healthWorkout.duration
+        )
         notifyConsumers()
     }
 
@@ -83,7 +101,8 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
                 performedAt: entry.performedAt,
                 exerciseCount: entry.exerciseEntries.count,
                 setCount: entry.exerciseEntries.reduce(0) { $0 + $1.sets.count },
-                caloriesBurnt: entry.caloriesBurnt
+                caloriesBurnt: entry.caloriesBurnt,
+                healthWorkoutId: entry.healthWorkoutId
             )
         }
     }
@@ -107,7 +126,11 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
                     name: exerciseNames[exerciseEntry.exerciseId] ?? Self.deletedExerciseName,
                     sets: exerciseEntry.sets
                 )
-            }
+            },
+            startedAt: entry.startedAt,
+            healthWorkoutId: entry.healthWorkoutId,
+            averageHeartRate: entry.averageHeartRate,
+            duration: entry.duration
         )
     }
 

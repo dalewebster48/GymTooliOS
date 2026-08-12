@@ -23,7 +23,18 @@ final class AppDatabaseProvider: DatabaseProvider {
         try connection.execute("PRAGMA foreign_keys = ON;")
     }
 
+    /// Bump when adding a migration below.
+    private static let schemaVersion = 1
+
     func migrate() throws {
+        try createTables()
+        try runMigrations()
+    }
+
+    /// The original schema. New columns never go in here — `create(ifNotExists:)`
+    /// is a no-op against a database that already exists, so anything added here
+    /// would appear on fresh installs only. Put them in `runMigrations()`.
+    private func createTables() throws {
         try connection.run(ExerciseTable.table.create(ifNotExists: true) { table in
             table.column(ExerciseTable.id, primaryKey: true)
             table.column(ExerciseTable.name)
@@ -80,5 +91,29 @@ final class AppDatabaseProvider: DatabaseProvider {
         try connection.run(
             EntrySetTable.table.createIndex(EntrySetTable.exerciseId, ifNotExists: true)
         )
+    }
+
+    /// Runs every migration the database hasn't seen yet, tracked in SQLite's
+    /// own `user_version`. Fresh databases start at 0 and run all of them, so
+    /// there is one code path regardless of when the database was created.
+    private func runMigrations() throws {
+        let version = try currentVersion()
+
+        if version < 1 {
+            try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.startedAt))
+            try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.healthWorkoutId))
+            try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.averageHeartRate))
+            try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.duration))
+        }
+
+        guard version < Self.schemaVersion else { return }
+        try connection.run("PRAGMA user_version = \(Self.schemaVersion);")
+    }
+
+    private func currentVersion() throws -> Int {
+        guard let version = try connection.scalar("PRAGMA user_version;") as? Int64 else {
+            return 0
+        }
+        return Int(version)
     }
 }

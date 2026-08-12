@@ -37,7 +37,8 @@ final class ViewModelFactory {
     func makeHistoryDetailViewModel(entryId: String) -> any HistoryDetailViewModelProtocol {
         HistoryDetailViewModel(
             entryId: entryId,
-            workoutEntryService: services.workoutEntryService
+            workoutEntryService: services.workoutEntryService,
+            healthService: services.healthService
         )
     }
 

@@ -19,6 +19,8 @@ protocol HistoryListViewModelProtocol: AnyObject, Observable {
     func didTapResumeSession()
     func subtitle(for item: WorkoutHistoryItem) -> String
     func detailText(for item: WorkoutHistoryItem) -> String
+    /// Nil once the session has been linked to an Apple Health workout.
+    func warningText(for item: WorkoutHistoryItem) -> String?
     func reload()
     func didSelectItem(id: String)
     func didRequestDeleteItem(id: String)
@@ -34,6 +36,8 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
     @ObservationIgnored private let navigator: any Navigator
 
     let title = "History"
+    private static let unlinkedWarning = "Not linked to Apple Health"
+
     let resumeSectionTitle = "IN PROGRESS"
     let deleteConfirmationTitle = "Delete this session?"
     let deleteConfirmationMessage = "The sets you recorded will be removed. This can't be undone."
@@ -102,6 +106,10 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
             return "\(exercises) · \(sets)"
         }
         return "\(exercises) · \(sets) · \(calories) kcal"
+    }
+
+    func warningText(for item: WorkoutHistoryItem) -> String? {
+        item.isLinked ? nil : Self.unlinkedWarning
     }
 
     func reload() {

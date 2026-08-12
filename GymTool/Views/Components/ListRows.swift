@@ -62,6 +62,9 @@ struct HistoryEntryRow: View {
     let name: String
     let date: String
     let detail: String
+    /// Shown in red beneath the detail line. Defaulted nil so rows with nothing
+    /// to flag don't have to say so.
+    var warning: String? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -74,6 +77,11 @@ struct HistoryEntryRow: View {
             Text(detail)
                 .font(.footnote)
                 .foregroundStyle(Theme.secondaryText)
+            if let warning {
+                Text(warning)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.destructive)
+            }
         }
         .padding(.vertical, 2)
         .frame(maxWidth: .infinity, alignment: .leading)

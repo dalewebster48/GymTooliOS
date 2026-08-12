@@ -15,7 +15,6 @@ protocol WorkoutSessionService: AnyObject {
     func removeSet(id: String, exerciseId: String)
     func updateReps(_ text: String, setId: String, exerciseId: String)
     func updateWeight(_ text: String, setId: String, exerciseId: String)
-    func updateCalories(_ text: String)
     /// Logs the session and clears it.
     func submit() throws
     /// Abandons the session without logging it.
@@ -65,7 +64,6 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
             workoutId: workout.id,
             workoutName: workout.name,
             startedAt: Date(),
-            caloriesText: "",
             exercises: workout.exercises.map {
                 SessionExercise(
                     exerciseId: $0.id,
@@ -116,12 +114,6 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
         }
     }
 
-    func updateCalories(_ text: String) {
-        guard var session = currentSession else { return }
-        session.caloriesText = text
-        store(session)
-    }
-
     func submit() throws {
         guard let session = currentSession else { return }
 
@@ -134,8 +126,8 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
 
         try workoutEntryService.logWorkout(
             workoutId: session.workoutId,
-            exerciseEntries: entries,
-            caloriesBurnt: session.caloriesBurnt
+            startedAt: session.startedAt,
+            exerciseEntries: entries
         )
         // Only cleared once the log succeeded, so a failed write leaves the
         // session recoverable.

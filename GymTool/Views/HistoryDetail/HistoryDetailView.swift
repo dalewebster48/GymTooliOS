@@ -26,6 +26,39 @@ struct HistoryDetailView: View {
                 }
             }
 
+            Section(viewModel.healthSectionTitle) {
+                if let caloriesText = viewModel.caloriesText {
+                    metricRow("Calories", caloriesText)
+                }
+                if let heartRateText = viewModel.averageHeartRateText {
+                    metricRow("Avg. Heart Rate", heartRateText)
+                }
+                if let durationText = viewModel.durationText {
+                    metricRow("Duration", durationText)
+                }
+
+                if let healthMessage = viewModel.healthMessage {
+                    Text(healthMessage)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.destructive)
+                }
+
+                Button {
+                    viewModel.didTapSync()
+                } label: {
+                    HStack {
+                        Text(viewModel.syncButtonTitle)
+                        if viewModel.isSyncing {
+                            Spacer()
+                            ProgressView()
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Theme.primaryAccent)
+                .disabled(!viewModel.canSync)
+            }
+
             ForEach(viewModel.exercises) { exercise in
                 Section(exercise.name) {
                     ForEach(exercise.sets) { set in
@@ -43,5 +76,16 @@ struct HistoryDetailView: View {
         .navigationTitle(viewModel.title)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { viewModel.onAppear() }
+    }
+
+    private func metricRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .foregroundStyle(Theme.secondaryText)
+            Spacer()
+            Text(value)
+                .foregroundStyle(Theme.primaryText)
+        }
+        .font(.subheadline)
     }
 }

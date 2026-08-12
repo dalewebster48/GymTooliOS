@@ -9,14 +9,7 @@ struct WorkoutSession: Codable, Hashable {
     /// it still reads correctly if the workout is deleted mid-session.
     let workoutName: String
     let startedAt: Date
-    var caloriesText: String
     var exercises: [SessionExercise]
-
-    /// Calories are optional — a session is worth recording whether or not you
-    /// bothered to enter them.
-    var caloriesBurnt: Int? {
-        Int(caloriesText.trimmed)
-    }
 
     /// A session is worth submitting once any exercise has a usable set.
     var hasLoggedSets: Bool {

@@ -28,7 +28,8 @@ struct HistoryListView: View {
                     HistoryEntryRow(
                         name: item.workoutName,
                         date: viewModel.subtitle(for: item),
-                        detail: viewModel.detailText(for: item)
+                        detail: viewModel.detailText(for: item),
+                        warning: viewModel.warningText(for: item)
                     )
                 }
                 .buttonStyle(.plain)
