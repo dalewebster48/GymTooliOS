@@ -15,6 +15,8 @@ protocol WorkoutSessionService: AnyObject {
     func removeSet(id: String, exerciseId: String)
     func updateReps(_ text: String, setId: String, exerciseId: String)
     func updateWeight(_ text: String, setId: String, exerciseId: String)
+    func updateNotes(_ text: String)
+    func updateFinished(_ isFinished: Bool)
     /// Logs the session and clears it.
     func submit() throws
     /// Abandons the session without logging it.
@@ -71,7 +73,9 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
                     details: $0.details,
                     sets: [Self.makeEmptySet()]
                 )
-            }
+            },
+            notes: "",
+            isFinished: true
         )
         store(session)
     }
@@ -94,10 +98,15 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
         mutate(exerciseId: exerciseId) { exercise in
             guard let index = exercise.sets.firstIndex(where: { $0.id == setId }) else { return }
             let set = exercise.sets[index]
+            let reps = Int(text.trimmed) ?? 0
             exercise.sets[index] = WorkoutSet(
                 id: set.id,
-                reps: Int(text.trimmed) ?? 0,
-                weight: set.weight
+                reps: reps,
+                weight: set.weight,
+                // Stamped the first time reps go in and kept through later
+                // corrections, so fixing a typo doesn't move the set in time.
+                // Clearing the reps un-does the set, so it clears the stamp.
+                completedAt: reps > 0 ? set.completedAt ?? Date() : nil
             )
         }
     }
@@ -109,25 +118,48 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
             exercise.sets[index] = WorkoutSet(
                 id: set.id,
                 reps: set.reps,
-                weight: Double(text.trimmed) ?? 0
+                weight: Double(text.trimmed) ?? 0,
+                completedAt: set.completedAt
             )
         }
+    }
+
+    func updateNotes(_ text: String) {
+        mutateSession { $0.notes = text }
+    }
+
+    func updateFinished(_ isFinished: Bool) {
+        mutateSession { $0.isFinished = isFinished }
     }
 
     func submit() throws {
         guard let session = currentSession else { return }
 
-        let entries = session.exercises.compactMap { exercise -> ExerciseEntry? in
-            let sets = exercise.completedSets
-            guard !sets.isEmpty else { return nil }
-            return ExerciseEntry(exerciseId: exercise.exerciseId, sets: sets)
-        }
+        let entries = session.exercises
+            .compactMap { exercise -> ExerciseEntry? in
+                let sets = exercise.completedSets
+                guard !sets.isEmpty else { return nil }
+                return ExerciseEntry(exerciseId: exercise.exerciseId, sets: sets)
+            }
+            // Stored in the order they were performed, so `position` reflects
+            // what you actually did. Untimed exercises (a session resumed from
+            // before timestamps existed) keep their place at the end.
+            .sorted { lhs, rhs in
+                switch (lhs.sets.firstCompletedAt, rhs.sets.firstCompletedAt) {
+                case let (lhs?, rhs?): return lhs < rhs
+                case (.some, nil): return true
+                default: return false
+                }
+            }
         guard !entries.isEmpty else { return }
 
+        let notes = session.notes.trimmed
         try workoutEntryService.logWorkout(
             workoutId: session.workoutId,
             startedAt: session.startedAt,
-            exerciseEntries: entries
+            exerciseEntries: entries,
+            notes: notes.isEmpty ? nil : notes,
+            isFinished: session.isFinished
         )
         // Only cleared once the log succeeded, so a failed write leaves the
         // session recoverable.
@@ -158,6 +190,12 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
         store(session)
     }
 
+    private func mutateSession(_ change: (inout WorkoutSession) -> Void) {
+        guard var session = currentSession else { return }
+        change(&session)
+        store(session)
+    }
+
     /// Every change is written straight through, so whatever is on screen is
     /// what survives a kill.
     private func store(_ session: WorkoutSession) {
@@ -177,6 +215,6 @@ final class WorkoutSessionServiceImpl: WorkoutSessionService {
     }
 
     private static func makeEmptySet() -> WorkoutSet {
-        WorkoutSet(id: UUID().uuidString, reps: 0, weight: 0)
+        WorkoutSet(id: UUID().uuidString, reps: 0, weight: 0, completedAt: nil)
     }
 }

@@ -24,7 +24,7 @@ final class AppDatabaseProvider: DatabaseProvider {
     }
 
     /// Bump when adding a migration below.
-    private static let schemaVersion = 1
+    private static let schemaVersion = 2
 
     func migrate() throws {
         try createTables()
@@ -104,6 +104,12 @@ final class AppDatabaseProvider: DatabaseProvider {
             try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.healthWorkoutId))
             try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.averageHeartRate))
             try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.duration))
+        }
+
+        if version < 2 {
+            try connection.run(EntrySetTable.table.addColumn(EntrySetTable.completedAt))
+            try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.notes))
+            try connection.run(WorkoutEntryTable.table.addColumn(WorkoutEntryTable.isFinished))
         }
 
         guard version < Self.schemaVersion else { return }

@@ -20,11 +20,27 @@ struct LogWorkoutView: View {
                         ExerciseRow(
                             name: exercise.name,
                             details: viewModel.progressText(for: exercise),
-                            isComplete: viewModel.isLogged(exercise)
+                            isComplete: viewModel.isLogged(exercise),
+                            performedOrder: viewModel.performedOrder(for: exercise)
                         )
                     }
                     .buttonStyle(.plain)
                 }
+            }
+
+            Section(viewModel.notesSectionTitle) {
+                TextField(
+                    viewModel.notesPlaceholder,
+                    text: .action(viewModel.notes, viewModel.didUpdateNotes),
+                    axis: .vertical
+                )
+                .lineLimit(3...8)
+
+                Toggle(
+                    viewModel.finishedTitle,
+                    isOn: .action(viewModel.isFinished, viewModel.didUpdateFinished)
+                )
+                .tint(Theme.secondaryAccent)
             }
 
             if let errorMessage = viewModel.errorMessage {

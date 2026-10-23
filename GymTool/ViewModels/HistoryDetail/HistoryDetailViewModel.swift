@@ -7,6 +7,9 @@ protocol HistoryDetailViewModelProtocol: AnyObject, Observable {
     var summaryText: String { get }
     var exercises: [LoggedExercise] { get }
     var errorMessage: String? { get }
+    var notesText: String? { get }
+    /// Shown only for sessions flagged as not finished.
+    var unfinishedText: String? { get }
 
     /// Apple Health section.
     var healthSectionTitle: String { get }
@@ -20,6 +23,7 @@ protocol HistoryDetailViewModelProtocol: AnyObject, Observable {
     var healthMessage: String? { get }
 
     func onAppear()
+    func sectionTitle(for exercise: LoggedExercise) -> String
     func setNumberText(forSetId id: String) -> String
     func setDetailText(for set: WorkoutSet) -> String
     func didTapSync()
@@ -65,6 +69,14 @@ final class HistoryDetailViewModel: HistoryDetailViewModelProtocol {
         return "\(Int(rate.rounded())) bpm"
     }
 
+    var notesText: String? {
+        detail?.notes
+    }
+
+    var unfinishedText: String? {
+        detail?.isFinished == false ? "Didn't finish this workout" : nil
+    }
+
     var durationText: String? {
         guard let duration = detail?.duration else { return nil }
         let minutes = Int((duration / 60).rounded())
@@ -85,10 +97,17 @@ final class HistoryDetailViewModel: HistoryDetailViewModelProtocol {
         loadDetail()
     }
 
+    func sectionTitle(for exercise: LoggedExercise) -> String {
+        guard let order = exercise.performedOrder else { return exercise.name }
+        return "\(order). \(exercise.name)"
+    }
+
     func setNumberText(forSetId id: String) -> String {
         for exercise in exercises {
             if let position = exercise.sets.firstIndex(where: { $0.id == id }) {
-                return "Set \(position + 1)"
+                let number = "Set \(position + 1)"
+                guard let completedAt = exercise.sets[position].completedAt else { return number }
+                return "\(number) · \(completedAt.timeFormatted)"
             }
         }
         return ""
@@ -138,7 +157,11 @@ final class HistoryDetailViewModel: HistoryDetailViewModelProtocol {
             }
             self.detail = detail
             title = detail.workoutName
-            exercises = detail.exercises
+            // Performed order where known; sessions without timestamps keep
+            // their stored order, untimed exercises after timed ones.
+            exercises = detail.exercises.sorted {
+                ($0.performedOrder ?? .max) < ($1.performedOrder ?? .max)
+            }
             summaryText = Self.makeSummary(for: detail)
         } catch {
             errorMessage = "Couldn't load this session. \(error.localizedDescription)"

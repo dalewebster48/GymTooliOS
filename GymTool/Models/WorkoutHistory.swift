@@ -14,6 +14,7 @@ struct WorkoutHistoryItem: Identifiable, Hashable {
     let setCount: Int
     let caloriesBurnt: Int?
     let healthWorkoutId: String?
+    let isFinished: Bool?
 
     var isLinked: Bool { healthWorkoutId != nil }
 }
@@ -33,6 +34,8 @@ struct WorkoutHistoryDetail: Identifiable, Hashable {
     let healthWorkoutId: String?
     let averageHeartRate: Double?
     let duration: TimeInterval?
+    let notes: String?
+    let isFinished: Bool?
 
     var isLinked: Bool { healthWorkoutId != nil }
 
@@ -45,4 +48,7 @@ struct LoggedExercise: Identifiable, Hashable {
     let exerciseId: String
     let name: String
     let sets: [WorkoutSet]
+    /// 1-based position in the order exercises were performed. Nil when the
+    /// session predates set timestamps.
+    let performedOrder: Int?
 }

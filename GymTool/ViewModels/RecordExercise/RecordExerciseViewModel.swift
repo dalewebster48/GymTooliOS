@@ -89,7 +89,9 @@ final class RecordExerciseViewModel: RecordExerciseViewModelProtocol {
     }
 
     func sessionTitle(for recording: ExerciseRecording) -> String {
-        recording.performedAt.historyFormatted
+        let date = recording.performedAt.historyFormatted
+        guard let order = recording.performedOrder else { return date }
+        return "\(date) · done \(order.ordinalFormatted)"
     }
 
     func setNumberText(forSetId id: String, in recording: ExerciseRecording) -> String {

@@ -102,10 +102,14 @@ final class HistoryListViewModel: HistoryListViewModelProtocol {
         let exercises = item.exerciseCount == 1 ? "1 exercise" : "\(item.exerciseCount) exercises"
         let sets = item.setCount == 1 ? "1 set" : "\(item.setCount) sets"
 
-        guard let calories = item.caloriesBurnt else {
-            return "\(exercises) · \(sets)"
+        var parts = [exercises, sets]
+        if let calories = item.caloriesBurnt {
+            parts.append("\(calories) kcal")
         }
-        return "\(exercises) · \(sets) · \(calories) kcal"
+        if item.isFinished == false {
+            parts.append("Unfinished")
+        }
+        return parts.joined(separator: " · ")
     }
 
     func warningText(for item: WorkoutHistoryItem) -> String? {

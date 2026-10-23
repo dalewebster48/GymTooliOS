@@ -28,6 +28,9 @@ struct ExerciseRow: View {
     /// Shows a trailing tick. Defaulted off, so rows that have no notion of
     /// being "done" don't have to say so.
     var isComplete: Bool = false
+    /// When set, the tick becomes a badge showing the order this exercise was
+    /// performed in.
+    var performedOrder: Int? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -43,7 +46,18 @@ struct ExerciseRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if isComplete {
+            if let performedOrder {
+                ZStack {
+                    Circle()
+                        .fill(Theme.secondaryAccent)
+                        .frame(width: 28, height: 28)
+                    Text("\(performedOrder)")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.white)
+                }
+                // The subtitle spells the order out, so this is decoration.
+                .accessibilityHidden(true)
+            } else if isComplete {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.title3)
                     .foregroundStyle(Theme.secondaryAccent)

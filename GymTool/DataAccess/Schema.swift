@@ -45,6 +45,12 @@ enum WorkoutEntryTable {
     static let averageHeartRate = SQLite.Expression<Double?>("average_heart_rate")
     /// Seconds, from the linked Health workout.
     static let duration = SQLite.Expression<Double?>("duration")
+
+    // Added in schema version 2. Optional for the same reason as above.
+
+    static let notes = SQLite.Expression<String?>("notes")
+    /// Nil for sessions logged before this was captured — unknown, not false.
+    static let isFinished = SQLite.Expression<Bool?>("is_finished")
 }
 
 enum EntrySetTable {
@@ -60,4 +66,7 @@ enum EntrySetTable {
     static let position = SQLite.Expression<Int>("position")
     static let reps = SQLite.Expression<Int>("reps")
     static let weight = SQLite.Expression<Double>("weight")
+    /// Added in schema version 2. When the set was done, which is what the
+    /// performed order of exercises is derived from.
+    static let completedAt = SQLite.Expression<Date?>("completed_at")
 }

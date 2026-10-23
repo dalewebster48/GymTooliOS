@@ -5,7 +5,13 @@ protocol WorkoutEntryServiceConsumer: AnyObject {
 }
 
 protocol WorkoutEntryService: AnyObject {
-    func logWorkout(workoutId: String, startedAt: Date, exerciseEntries: [ExerciseEntry]) throws
+    func logWorkout(
+        workoutId: String,
+        startedAt: Date,
+        exerciseEntries: [ExerciseEntry],
+        notes: String?,
+        isFinished: Bool
+    ) throws
     func fetchHistory() throws -> [WorkoutHistoryItem]
     func fetchHistoryDetail(entryId: String) throws -> WorkoutHistoryDetail?
     /// Records the Apple Health workout this session matched, with its metrics.
@@ -48,7 +54,9 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
     func logWorkout(
         workoutId: String,
         startedAt: Date,
-        exerciseEntries: [ExerciseEntry]
+        exerciseEntries: [ExerciseEntry],
+        notes: String?,
+        isFinished: Bool
     ) throws {
         let entry = WorkoutEntry(
             id: UUID().uuidString,
@@ -60,7 +68,9 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
             startedAt: startedAt,
             healthWorkoutId: nil,
             averageHeartRate: nil,
-            duration: nil
+            duration: nil,
+            notes: notes,
+            isFinished: isFinished
         )
         try workoutEntryRepository.insert(entry)
         notifyConsumers()
@@ -102,7 +112,8 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
                 exerciseCount: entry.exerciseEntries.count,
                 setCount: entry.exerciseEntries.reduce(0) { $0 + $1.sets.count },
                 caloriesBurnt: entry.caloriesBurnt,
-                healthWorkoutId: entry.healthWorkoutId
+                healthWorkoutId: entry.healthWorkoutId,
+                isFinished: entry.isFinished
             )
         }
     }
@@ -114,6 +125,11 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
 
         let workoutNames = try workoutNamesById()
         let exerciseNames = try exerciseNamesById()
+        let orders = PerformedOrder.ranks(
+            startTimes: entry.exerciseEntries.map {
+                (exerciseId: $0.exerciseId, startedAt: $0.sets.firstCompletedAt)
+            }
+        )
 
         return WorkoutHistoryDetail(
             entryId: entry.id,
@@ -124,13 +140,16 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
                 LoggedExercise(
                     exerciseId: exerciseEntry.exerciseId,
                     name: exerciseNames[exerciseEntry.exerciseId] ?? Self.deletedExerciseName,
-                    sets: exerciseEntry.sets
+                    sets: exerciseEntry.sets,
+                    performedOrder: orders[exerciseEntry.exerciseId]
                 )
             },
             startedAt: entry.startedAt,
             healthWorkoutId: entry.healthWorkoutId,
             averageHeartRate: entry.averageHeartRate,
-            duration: entry.duration
+            duration: entry.duration,
+            notes: entry.notes,
+            isFinished: entry.isFinished
         )
     }
 

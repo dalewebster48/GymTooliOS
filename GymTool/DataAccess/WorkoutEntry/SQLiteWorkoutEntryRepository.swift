@@ -23,7 +23,9 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
                 startedAt: row[WorkoutEntryTable.startedAt],
                 healthWorkoutId: row[WorkoutEntryTable.healthWorkoutId],
                 averageHeartRate: row[WorkoutEntryTable.averageHeartRate],
-                duration: row[WorkoutEntryTable.duration]
+                duration: row[WorkoutEntryTable.duration],
+                notes: row[WorkoutEntryTable.notes],
+                isFinished: row[WorkoutEntryTable.isFinished]
             )
         }
     }
@@ -59,18 +61,48 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
                     // `id` is ambiguous across the joined tables.
                     id: row[EntrySetTable.table[EntrySetTable.id]],
                     reps: row[EntrySetTable.reps],
-                    weight: row[EntrySetTable.weight]
+                    weight: row[EntrySetTable.weight],
+                    completedAt: row[EntrySetTable.completedAt]
                 )
             )
         }
+
+        let ordersByEntry = try performedOrders(entryIds: entryIdOrder, exerciseId: exerciseId)
 
         return entryIdOrder.compactMap { entryId in
             guard let performedAt = performedAtByEntry[entryId] else { return nil }
             return ExerciseRecording(
                 entryId: entryId,
                 performedAt: performedAt,
-                sets: setsByEntry[entryId] ?? []
+                sets: setsByEntry[entryId] ?? [],
+                performedOrder: ordersByEntry[entryId]
             )
+        }
+    }
+
+    /// Where `exerciseId` fell in each entry's performed order. Needs every
+    /// exercise's sets in those entries, not just this one's, to rank against.
+    private func performedOrders(
+        entryIds: [String],
+        exerciseId: String
+    ) throws -> [String: Int] {
+        let query = EntrySetTable.table
+            .select(EntrySetTable.entryId, EntrySetTable.exerciseId, EntrySetTable.completedAt)
+            .filter(entryIds.contains(EntrySetTable.entryId) && EntrySetTable.completedAt != nil)
+
+        var startTimesByEntry: [String: [String: Date]] = [:]
+        for row in try databaseProvider.connection.prepare(query) {
+            guard let completedAt = row[EntrySetTable.completedAt] else { continue }
+            let entryId = row[EntrySetTable.entryId]
+            let rowExerciseId = row[EntrySetTable.exerciseId]
+            let earliest = startTimesByEntry[entryId]?[rowExerciseId].map { min($0, completedAt) }
+            startTimesByEntry[entryId, default: [:]][rowExerciseId] = earliest ?? completedAt
+        }
+
+        return startTimesByEntry.compactMapValues { startTimes in
+            PerformedOrder.ranks(
+                startTimes: startTimes.map { (exerciseId: $0.key, startedAt: $0.value) }
+            )[exerciseId]
         }
     }
 
@@ -111,7 +143,9 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
                     WorkoutEntryTable.startedAt <- entry.startedAt,
                     WorkoutEntryTable.healthWorkoutId <- entry.healthWorkoutId,
                     WorkoutEntryTable.averageHeartRate <- entry.averageHeartRate,
-                    WorkoutEntryTable.duration <- entry.duration
+                    WorkoutEntryTable.duration <- entry.duration,
+                    WorkoutEntryTable.notes <- entry.notes,
+                    WorkoutEntryTable.isFinished <- entry.isFinished
                 )
             )
 
@@ -127,7 +161,8 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
                             EntrySetTable.exerciseId <- exerciseEntry.exerciseId,
                             EntrySetTable.position <- position,
                             EntrySetTable.reps <- set.reps,
-                            EntrySetTable.weight <- set.weight
+                            EntrySetTable.weight <- set.weight,
+                            EntrySetTable.completedAt <- set.completedAt
                         )
                     )
                     position += 1
@@ -147,7 +182,8 @@ final class SQLiteWorkoutEntryRepository: WorkoutEntryRepository {
             let set = WorkoutSet(
                 id: row[EntrySetTable.id],
                 reps: row[EntrySetTable.reps],
-                weight: row[EntrySetTable.weight]
+                weight: row[EntrySetTable.weight],
+                completedAt: row[EntrySetTable.completedAt]
             )
             setsByEntry[row[EntrySetTable.entryId], default: []]
                 .append((exerciseId: row[EntrySetTable.exerciseId], set: set))

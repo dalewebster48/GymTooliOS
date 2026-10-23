@@ -8,4 +8,7 @@ struct ExerciseRecording: Identifiable, Hashable {
     let entryId: String
     let performedAt: Date
     let sets: [WorkoutSet]
+    /// Where this exercise fell in that session's performed order, 1-based.
+    /// Nil when the session predates set timestamps.
+    let performedOrder: Int?
 }

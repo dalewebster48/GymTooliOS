@@ -16,6 +16,16 @@ struct HistoryDetailView: View {
                 Text(viewModel.summaryText)
                     .font(.subheadline)
                     .foregroundStyle(Theme.secondaryText)
+                if let unfinishedText = viewModel.unfinishedText {
+                    Text(unfinishedText)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.destructive)
+                }
+                if let notesText = viewModel.notesText {
+                    Text(notesText)
+                        .font(.body)
+                        .foregroundStyle(Theme.primaryText)
+                }
             }
 
             if let errorMessage = viewModel.errorMessage {
@@ -60,7 +70,7 @@ struct HistoryDetailView: View {
             }
 
             ForEach(viewModel.exercises) { exercise in
-                Section(exercise.name) {
+                Section(viewModel.sectionTitle(for: exercise)) {
                     ForEach(exercise.sets) { set in
                         LoggedSetRow(
                             setNumber: viewModel.setNumberText(forSetId: set.id),
