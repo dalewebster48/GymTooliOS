@@ -55,6 +55,7 @@ struct RootView: View {
             }
             .interactiveDismissDisabled(!route.allowsInteractiveDismissal)
         }
+        .onAppear { homeContainerViewModel.onAppear() }
     }
 
     /// Each tab keeps its own stack, so switching away and back returns you to

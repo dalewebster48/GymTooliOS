@@ -35,6 +35,7 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
     private let workoutEntryRepository: any WorkoutEntryRepository
     private let workoutRepository: any WorkoutRepository
     private let exerciseRepository: any ExerciseRepository
+    private let healthLinkReminderService: any HealthLinkReminderService
 
     private var _consumers: NSHashTable<AnyObject> = .weakObjects()
     private var consumers: [any WorkoutEntryServiceConsumer] {
@@ -44,11 +45,13 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
     init(
         workoutEntryRepository: any WorkoutEntryRepository,
         workoutRepository: any WorkoutRepository,
-        exerciseRepository: any ExerciseRepository
+        exerciseRepository: any ExerciseRepository,
+        healthLinkReminderService: any HealthLinkReminderService
     ) {
         self.workoutEntryRepository = workoutEntryRepository
         self.workoutRepository = workoutRepository
         self.exerciseRepository = exerciseRepository
+        self.healthLinkReminderService = healthLinkReminderService
     }
 
     func logWorkout(
@@ -73,6 +76,12 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
             isFinished: isFinished
         )
         try workoutEntryRepository.insert(entry)
+        // `try?`: the entry is already written, so throwing here would leave
+        // the session uncleared and invite logging it twice.
+        healthLinkReminderService.scheduleReminder(
+            entryId: entry.id,
+            workoutName: (try? workoutNamesById())?[workoutId] ?? Self.deletedWorkoutName
+        )
         notifyConsumers()
     }
 
@@ -84,6 +93,7 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
             averageHeartRate: healthWorkout.averageHeartRate,
             duration: healthWorkout.duration
         )
+        healthLinkReminderService.cancelReminder(entryId: entryId)
         notifyConsumers()
     }
 
@@ -162,6 +172,7 @@ final class WorkoutEntryServiceImpl: WorkoutEntryService {
 
     func deleteEntry(id: String) throws {
         try workoutEntryRepository.delete(id: id)
+        healthLinkReminderService.cancelReminder(entryId: id)
         notifyConsumers()
     }
 

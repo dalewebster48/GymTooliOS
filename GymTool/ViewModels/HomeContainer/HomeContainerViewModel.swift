@@ -18,6 +18,8 @@ protocol HomeContainerViewModelProtocol: AnyObject, Observable {
     var workoutListViewModel: any WorkoutListViewModelProtocol { get }
     var exerciseListViewModel: any ExerciseListViewModelProtocol { get }
     var historyListViewModel: any HistoryListViewModelProtocol { get }
+
+    func onAppear()
 }
 
 @Observable
@@ -27,9 +29,42 @@ final class HomeContainerViewModel: HomeContainerViewModelProtocol {
     @ObservationIgnored let exerciseListViewModel: any ExerciseListViewModelProtocol
     @ObservationIgnored let historyListViewModel: any HistoryListViewModelProtocol
 
-    init(childViewModelFactory: any HomeContainerChildViewModelFactory) {
+    @ObservationIgnored private let healthLinkReminderService: any HealthLinkReminderService
+    @ObservationIgnored private let navigator: any Navigator
+
+    init(
+        childViewModelFactory: any HomeContainerChildViewModelFactory,
+        healthLinkReminderService: any HealthLinkReminderService,
+        navigator: any Navigator
+    ) {
         self.workoutListViewModel = childViewModelFactory.makeWorkoutListViewModel()
         self.exerciseListViewModel = childViewModelFactory.makeExerciseListViewModel()
         self.historyListViewModel = childViewModelFactory.makeHistoryListViewModel()
+        self.healthLinkReminderService = healthLinkReminderService
+        self.navigator = navigator
+    }
+
+    func onAppear() {
+        healthLinkReminderService.addConsumer(self)
+
+        // A reminder that cold-launched the app was tapped before this existed.
+        if let entryId = healthLinkReminderService.takeOpenedEntryId() {
+            showSession(entryId: entryId)
+        }
+    }
+
+    private func showSession(entryId: String) {
+        navigator.navigate(.reveal(.insights, .historyDetail(entryId: entryId)))
+    }
+}
+
+// MARK: - HealthLinkReminderConsumer
+
+extension HomeContainerViewModel: HealthLinkReminderConsumer {
+    nonisolated func reminderWasOpened(
+        healthLinkReminderService: any HealthLinkReminderService,
+        entryId: String
+    ) {
+        Task { @MainActor in showSession(entryId: entryId) }
     }
 }

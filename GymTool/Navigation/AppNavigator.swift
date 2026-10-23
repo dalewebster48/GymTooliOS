@@ -34,6 +34,11 @@ final class AppNavigator: Navigator {
 
         case .modal(let route):
             modal = route
+
+        case .reveal(let tab, let route):
+            dismiss()
+            selectedTab = tab
+            paths[tab] = [route]
         }
     }
 

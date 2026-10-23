@@ -14,7 +14,11 @@ final class ViewModelFactory {
     }
 
     func makeHomeContainerViewModel() -> any HomeContainerViewModelProtocol {
-        HomeContainerViewModel(childViewModelFactory: self)
+        HomeContainerViewModel(
+            childViewModelFactory: self,
+            healthLinkReminderService: services.healthLinkReminderService,
+            navigator: navigator
+        )
     }
 
     func makeWorkoutDetailViewModel(workoutId: String) -> any WorkoutDetailViewModelProtocol {

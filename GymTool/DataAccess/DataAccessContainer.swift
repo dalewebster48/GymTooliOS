@@ -6,6 +6,7 @@ protocol DataAccessContainer: AnyObject {
     var workoutEntryRepository: any WorkoutEntryRepository { get }
     var workoutSessionRepository: any WorkoutSessionRepository { get }
     var healthRepository: any HealthRepository { get }
+    var notificationRepository: any NotificationRepository { get }
 }
 
 final class AppDataAccessContainer: DataAccessContainer {
@@ -14,6 +15,7 @@ final class AppDataAccessContainer: DataAccessContainer {
     let workoutEntryRepository: any WorkoutEntryRepository
     let workoutSessionRepository: any WorkoutSessionRepository
     let healthRepository: any HealthRepository
+    let notificationRepository: any NotificationRepository
 
     init(databaseProvider: any DatabaseProvider) {
         exerciseRepository = SQLiteExerciseRepository(databaseProvider: databaseProvider)
@@ -23,5 +25,6 @@ final class AppDataAccessContainer: DataAccessContainer {
         workoutSessionRepository = UserDefaultsWorkoutSessionRepository()
         // Not backed by our own store at all — Apple Health is the source.
         healthRepository = HealthKitRepository()
+        notificationRepository = UserNotificationRepository()
     }
 }

@@ -51,4 +51,8 @@ enum NavigationRoute: Hashable, Identifiable {
 enum NavigationAction: Hashable {
     case modal(NavigationRoute)
     case push(NavigationRoute)
+    /// Jumps straight to a screen from outside the app's own flow, such as a
+    /// notification: closes any sheet, switches to `tab`, and shows `route` on
+    /// top of that tab's root.
+    case reveal(AppTab, NavigationRoute)
 }
