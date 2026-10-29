@@ -1,0 +1,11 @@
+# Runs on every push to main so Grok Bot can notice the push and pull it to the Mac.
+name: Push signal
+on:
+  push:
+    branches: [main]
+permissions: {}
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Pushed ${GITHUB_SHA}"
