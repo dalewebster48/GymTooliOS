@@ -7,6 +7,7 @@ protocol DataAccessContainer: AnyObject {
     var workoutSessionRepository: any WorkoutSessionRepository { get }
     var healthRepository: any HealthRepository { get }
     var notificationRepository: any NotificationRepository { get }
+    var screenBrightnessRepository: any ScreenBrightnessRepository { get }
 }
 
 final class AppDataAccessContainer: DataAccessContainer {
@@ -16,6 +17,7 @@ final class AppDataAccessContainer: DataAccessContainer {
     let workoutSessionRepository: any WorkoutSessionRepository
     let healthRepository: any HealthRepository
     let notificationRepository: any NotificationRepository
+    let screenBrightnessRepository: any ScreenBrightnessRepository
 
     init(databaseProvider: any DatabaseProvider) {
         exerciseRepository = SQLiteExerciseRepository(databaseProvider: databaseProvider)
@@ -26,5 +28,6 @@ final class AppDataAccessContainer: DataAccessContainer {
         // Not backed by our own store at all — Apple Health is the source.
         healthRepository = HealthKitRepository()
         notificationRepository = UserNotificationRepository()
+        screenBrightnessRepository = UIScreenBrightnessRepository()
     }
 }

@@ -83,6 +83,12 @@ final class ViewModelFactory {
 // MARK: - HomeContainerChildViewModelFactory
 
 extension ViewModelFactory: HomeContainerChildViewModelFactory {
+    func makeMembershipViewModel() -> any MembershipViewModelProtocol {
+        MembershipViewModel(
+            screenBrightnessService: services.screenBrightnessService
+        )
+    }
+
     func makeWorkoutListViewModel() -> any WorkoutListViewModelProtocol {
         WorkoutListViewModel(
             workoutService: services.workoutService,

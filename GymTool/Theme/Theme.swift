@@ -30,4 +30,7 @@ enum Theme {
     static var secondaryText: Color { Color(uiColor: .secondaryLabel) }
     static var placeholderText: Color { Color(uiColor: .placeholderText) }
     static var destructive: Color { Color(uiColor: .systemRed) }
+
+    /// White in both appearances: scanners need dark bars on a light ground.
+    static var barcodeBackground: Color { Color(uiColor: .white) }
 }

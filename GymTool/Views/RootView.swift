@@ -10,6 +10,20 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $navigator.selectedTab) {
+            // First in the bar, but not the default — `AppNavigator.selectedTab`
+            // still opens on Workouts.
+            Tab(
+                AppTab.membership.title,
+                systemImage: AppTab.membership.systemImage,
+                value: AppTab.membership
+            ) {
+                stack(for: .membership) {
+                    viewFactory.makeMembershipView(
+                        viewModel: homeContainerViewModel.membershipViewModel
+                    )
+                }
+            }
+
             Tab(
                 AppTab.workouts.title,
                 systemImage: AppTab.workouts.systemImage,

@@ -14,6 +14,12 @@ final class ViewFactory {
     // models live for as long as the app does and are owned by `AppContext`;
     // only the routed screens below get a view model minted per presentation.
 
+    func makeMembershipView(
+        viewModel: any MembershipViewModelProtocol
+    ) -> MembershipView {
+        MembershipView(viewModel: viewModel)
+    }
+
     func makeWorkoutListView(
         viewModel: any WorkoutListViewModelProtocol
     ) -> WorkoutListView {
