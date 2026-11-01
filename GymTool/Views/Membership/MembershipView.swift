@@ -1,3 +1,4 @@
+import PassKit
 import SwiftUI
 
 struct MembershipView: View {
@@ -6,47 +7,34 @@ struct MembershipView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        VStack(spacing: 0) {
-            Picker(
-                viewModel.formatPickerTitle,
-                selection: .action(viewModel.selectedFormat, viewModel.didSelectFormat)
-            ) {
-                ForEach(viewModel.formats) { format in
-                    Text(viewModel.formatTitle(for: format))
-                        .tag(format)
-                }
+        VStack(spacing: 24) {
+            Spacer()
+            if let barcode = viewModel.barcode {
+                Image(barcode, scale: 1, label: Text(viewModel.barcodeAccessibilityLabel))
+                    .resizable()
+                    .scaledToFit()
+                    // The white margin is the barcode's quiet zone, not
+                    // decoration — scanners need clear space either side of
+                    // the bars.
+                    .padding(24)
+                    .background(Theme.barcodeBackground, in: .rect(cornerRadius: 16))
             }
-            .pickerStyle(.segmented)
-
             Spacer()
-            barcode
-                // The white margin is the barcode's quiet zone, not decoration —
-                // scanners need clear space either side of the bars.
-                .padding(24)
-                .background(Theme.barcodeBackground, in: .rect(cornerRadius: 16))
-            Spacer()
+            if let pass = viewModel.walletPass {
+                // Presents Wallet's own add sheet, which also says when the
+                // pass is already there.
+                AddPassToWalletButton([pass]) { _ in }
+                    .frame(height: 50)
+            }
         }
         .padding()
         .background(Theme.background)
         .navigationTitle(viewModel.title)
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear { viewModel.onAppear() }
         .onDisappear { viewModel.onDisappear() }
         .onChange(of: scenePhase) { _, phase in
             viewModel.didChangeAppActivity(isActive: phase == .active)
-        }
-    }
-
-    @ViewBuilder
-    private var barcode: some View {
-        if let generated = viewModel.generatedBarcode {
-            Image(generated, scale: 1, label: Text(viewModel.barcodeAccessibilityLabel))
-                .resizable()
-                .scaledToFit()
-        } else if let asset = viewModel.barcodeAsset {
-            Image(asset)
-                .resizable()
-                .scaledToFit()
-                .accessibilityLabel(viewModel.barcodeAccessibilityLabel)
         }
     }
 }

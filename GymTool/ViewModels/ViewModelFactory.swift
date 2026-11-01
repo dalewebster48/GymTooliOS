@@ -78,17 +78,22 @@ final class ViewModelFactory {
             workoutEntryService: services.workoutEntryService
         )
     }
+
+    func makeSettingsViewModel() -> any SettingsViewModelProtocol {
+        SettingsViewModel(navigator: navigator)
+    }
+
+    func makeMembershipViewModel() -> any MembershipViewModelProtocol {
+        MembershipViewModel(
+            screenBrightnessService: services.screenBrightnessService,
+            walletService: services.walletService
+        )
+    }
 }
 
 // MARK: - HomeContainerChildViewModelFactory
 
 extension ViewModelFactory: HomeContainerChildViewModelFactory {
-    func makeMembershipViewModel() -> any MembershipViewModelProtocol {
-        MembershipViewModel(
-            screenBrightnessService: services.screenBrightnessService
-        )
-    }
-
     func makeWorkoutListViewModel() -> any WorkoutListViewModelProtocol {
         WorkoutListViewModel(
             workoutService: services.workoutService,

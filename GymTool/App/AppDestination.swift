@@ -1,14 +1,12 @@
 import Foundation
 
 enum AppTab: Int, CaseIterable, Hashable {
-    case membership
     case workouts
     case exercises
     case insights
 
     var title: String {
         switch self {
-        case .membership: "Membership"
         case .workouts: "Workouts"
         case .exercises: "Exercises"
         case .insights: "Insights"
@@ -17,7 +15,6 @@ enum AppTab: Int, CaseIterable, Hashable {
 
     var systemImage: String {
         switch self {
-        case .membership: "barcode"
         case .workouts: "dumbbell"
         case .exercises: "figure.strengthtraining.traditional"
         case .insights: "chart.bar"
@@ -33,6 +30,8 @@ enum NavigationRoute: Hashable, Identifiable {
     case exerciseForm(mode: ExerciseFormMode)
     case logWorkout(workoutId: String)
     case recordExercise(exerciseId: String)
+    case settings
+    case membership
 
     /// For `.sheet(item:)`. A route fully describes its screen, so it is its
     /// own identity.
@@ -45,7 +44,8 @@ enum NavigationRoute: Hashable, Identifiable {
         switch self {
         case .logWorkout, .workoutForm, .exerciseForm:
             false
-        case .workoutDetail, .exerciseDetail, .historyDetail, .recordExercise:
+        case .workoutDetail, .exerciseDetail, .historyDetail, .recordExercise,
+             .settings, .membership:
             true
         }
     }

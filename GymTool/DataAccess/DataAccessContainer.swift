@@ -8,6 +8,7 @@ protocol DataAccessContainer: AnyObject {
     var healthRepository: any HealthRepository { get }
     var notificationRepository: any NotificationRepository { get }
     var screenBrightnessRepository: any ScreenBrightnessRepository { get }
+    var walletPassRepository: any WalletPassRepository { get }
 }
 
 final class AppDataAccessContainer: DataAccessContainer {
@@ -18,6 +19,7 @@ final class AppDataAccessContainer: DataAccessContainer {
     let healthRepository: any HealthRepository
     let notificationRepository: any NotificationRepository
     let screenBrightnessRepository: any ScreenBrightnessRepository
+    let walletPassRepository: any WalletPassRepository
 
     init(databaseProvider: any DatabaseProvider) {
         exerciseRepository = SQLiteExerciseRepository(databaseProvider: databaseProvider)
@@ -29,5 +31,6 @@ final class AppDataAccessContainer: DataAccessContainer {
         healthRepository = HealthKitRepository()
         notificationRepository = UserNotificationRepository()
         screenBrightnessRepository = UIScreenBrightnessRepository()
+        walletPassRepository = BundleWalletPassRepository()
     }
 }

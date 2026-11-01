@@ -8,6 +8,7 @@ final class ServicesContainer {
     let healthService: any HealthService
     let healthLinkReminderService: any HealthLinkReminderService
     let screenBrightnessService: any ScreenBrightnessService
+    let walletService: any WalletService
 
     init(dataAccess: any DataAccessContainer) {
         exerciseService = ExerciseServiceImpl(
@@ -43,6 +44,10 @@ final class ServicesContainer {
 
         screenBrightnessService = ScreenBrightnessServiceImpl(
             screenBrightnessRepository: dataAccess.screenBrightnessRepository
+        )
+
+        walletService = WalletServiceImpl(
+            walletPassRepository: dataAccess.walletPassRepository
         )
     }
 }

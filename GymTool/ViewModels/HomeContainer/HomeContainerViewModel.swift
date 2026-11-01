@@ -5,18 +5,16 @@ import Observation
 /// — never constructed inline here.
 @MainActor
 protocol HomeContainerChildViewModelFactory: AnyObject {
-    func makeMembershipViewModel() -> any MembershipViewModelProtocol
     func makeWorkoutListViewModel() -> any WorkoutListViewModelProtocol
     func makeExerciseListViewModel() -> any ExerciseListViewModelProtocol
     func makeHistoryListViewModel() -> any HistoryListViewModelProtocol
 }
 
-/// Owns the four tab-root view models for the life of the app. Tab *selection*
+/// Owns the three tab-root view models for the life of the app. Tab *selection*
 /// is not here — it lives on `AppNavigator`, because a push has to know which
 /// stack it lands on.
 @MainActor
 protocol HomeContainerViewModelProtocol: AnyObject, Observable {
-    var membershipViewModel: any MembershipViewModelProtocol { get }
     var workoutListViewModel: any WorkoutListViewModelProtocol { get }
     var exerciseListViewModel: any ExerciseListViewModelProtocol { get }
     var historyListViewModel: any HistoryListViewModelProtocol { get }
@@ -27,7 +25,6 @@ protocol HomeContainerViewModelProtocol: AnyObject, Observable {
 @Observable
 @MainActor
 final class HomeContainerViewModel: HomeContainerViewModelProtocol {
-    @ObservationIgnored let membershipViewModel: any MembershipViewModelProtocol
     @ObservationIgnored let workoutListViewModel: any WorkoutListViewModelProtocol
     @ObservationIgnored let exerciseListViewModel: any ExerciseListViewModelProtocol
     @ObservationIgnored let historyListViewModel: any HistoryListViewModelProtocol
@@ -40,7 +37,6 @@ final class HomeContainerViewModel: HomeContainerViewModelProtocol {
         healthLinkReminderService: any HealthLinkReminderService,
         navigator: any Navigator
     ) {
-        self.membershipViewModel = childViewModelFactory.makeMembershipViewModel()
         self.workoutListViewModel = childViewModelFactory.makeWorkoutListViewModel()
         self.exerciseListViewModel = childViewModelFactory.makeExerciseListViewModel()
         self.historyListViewModel = childViewModelFactory.makeHistoryListViewModel()

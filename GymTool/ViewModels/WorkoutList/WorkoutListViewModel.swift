@@ -4,6 +4,7 @@ import Observation
 @MainActor
 protocol WorkoutListViewModelProtocol: AnyObject, Observable {
     var title: String { get }
+    var settingsButtonTitle: String { get }
     var workouts: [Workout] { get }
     var emptyStateMessage: String { get }
     var isEmpty: Bool { get }
@@ -12,6 +13,7 @@ protocol WorkoutListViewModelProtocol: AnyObject, Observable {
     func subtitle(for workout: Workout) -> String
     func didSelectWorkout(id: String)
     func didTapCreateWorkout()
+    func didTapSettings()
 }
 
 @Observable
@@ -22,6 +24,7 @@ final class WorkoutListViewModel: WorkoutListViewModelProtocol {
     @ObservationIgnored private let navigator: any Navigator
 
     let title = "Workouts"
+    let settingsButtonTitle = "Settings"
 
     var workouts: [Workout] = []
     var emptyStateMessage = ""
@@ -61,6 +64,10 @@ final class WorkoutListViewModel: WorkoutListViewModelProtocol {
 
     func didTapCreateWorkout() {
         navigator.navigate(.modal(.workoutForm(mode: .create)))
+    }
+
+    func didTapSettings() {
+        navigator.navigate(.modal(.settings))
     }
 
     private func loadWorkouts() {

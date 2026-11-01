@@ -31,6 +31,14 @@ struct WorkoutListView: View {
         }
         .navigationTitle(viewModel.title)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    viewModel.didTapSettings()
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel(viewModel.settingsButtonTitle)
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     viewModel.didTapCreateWorkout()

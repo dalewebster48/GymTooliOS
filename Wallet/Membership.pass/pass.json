@@ -1,0 +1,30 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.com.dalewebster.GymTool.membership",
+  "teamIdentifier": "TXS69XU8F2",
+  "serialNumber": "membership-8323249159",
+  "organizationName": "GymTool",
+  "description": "Gym membership barcode",
+  "logoText": "Gym Membership",
+  "foregroundColor": "rgb(255, 255, 255)",
+  "labelColor": "rgb(204, 224, 255)",
+  "backgroundColor": "rgb(0, 102, 230)",
+  "sharingProhibited": true,
+  "generic": {
+    "secondaryFields": [
+      {
+        "key": "number",
+        "label": "MEMBER NO.",
+        "value": "8323249159"
+      }
+    ]
+  },
+  "barcodes": [
+    {
+      "format": "PKBarcodeFormatCode128",
+      "message": "8323249159",
+      "messageEncoding": "iso-8859-1",
+      "altText": "8323249159"
+    }
+  ]
+}
